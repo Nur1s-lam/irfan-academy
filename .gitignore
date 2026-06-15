@@ -1,29 +1,37 @@
-# ===== FLUTTER =====
+# Flutter/Dart
 .dart_tool/
+.packages
+.build/
+build/
 .flutter-plugins
 .flutter-plugins-dependencies
-.packages
-.pub-cache/
-.pub/
-build/
-coverage/
 
-# ===== IDE =====
-.idea/
-*.iml
-.vscode/
-
-# ===== LOGS =====
-*.log
-.DS_Store
-
-# ===== ANDROID =====
-android/.gradle/
-android/local.properties
+# Android build
 android/app/build/
+android/.gradle/
 
-# ===== IOS =====
+# iOS
 ios/Pods/
 ios/.symlinks/
-ios/Flutter/Flutter.framework/
+ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
+
+# Windows build
+windows/build/
+
+# macOS build
+macos/build/
+
+# Linux build
+linux/build/
+
+# Node (если есть)
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Logs
+*.log
