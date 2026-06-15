@@ -1,0 +1,6 @@
+{
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.jdt.ls.java.home": "C:/Program Files/Zulu/zulu-17",
+    "java.import.gradle.java.home": "C:/Program Files/Zulu/zulu-17",
+    "gradle.java.home": "C:/Program Files/Zulu/zulu-17"
+}

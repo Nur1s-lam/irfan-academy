@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "843262522577",
+    "project_id": "irfanacademy",
+    "storage_bucket": "irfanacademy.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:843262522577:android:37af2a3518377a214181f0",
+        "android_client_info": {
+          "package_name": "com.example.irfan_academy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC4sAyTido8QDazG5KHqk_HntW04IuuJpg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
