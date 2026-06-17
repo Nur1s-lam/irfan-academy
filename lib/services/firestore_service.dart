@@ -3,6 +3,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/lesson.dart';
 import '../models/user_profile.dart';
 
+class QuranBookmark {
+  const QuranBookmark({
+    required this.ayahNumber,
+    required this.surahName,
+  });
+
+  final int ayahNumber;
+  final String surahName;
+}
+
 class FirestoreService {
   FirestoreService(this.uid);
 
@@ -110,7 +120,28 @@ class FirestoreService {
     return _lessonsCol
         .orderBy('sortOrder')
         .snapshots()
-        .map((snap) => snap.docs.map(Lesson.fromFirestore).toList());
+        .map((snap) {
+          final seen = <String>{};
+          final lessons = <Lesson>[];
+
+          for (final doc in snap.docs) {
+            final lesson = Lesson.fromFirestore(doc);
+            final key = [
+              lesson.day,
+              lesson.time,
+              lesson.durationMin,
+              lesson.type,
+              lesson.topic,
+              lesson.teacher,
+            ].join('|');
+
+            if (seen.add(key)) {
+              lessons.add(lesson);
+            }
+          }
+
+          return lessons;
+        });
   }
 
   Future<void> ensureDefaultLessons() => initDefaultLessons();
@@ -157,8 +188,10 @@ class FirestoreService {
       },
     ];
 
-    for (final lesson in defaults) {
-      await _lessonsCol.add(lesson);
+    for (var index = 0; index < defaults.length; index++) {
+      await _lessonsCol
+          .doc('default-${index + 1}')
+          .set(defaults[index], SetOptions(merge: true));
     }
   }
 
@@ -182,10 +215,43 @@ class FirestoreService {
     }
   }
 
+  Future<void> removeBookmarkFromSurah(int ayahNumber, String surahName) async {
+    final snap = await _bookmarksCol
+        .where('ayahNumber', isEqualTo: ayahNumber)
+        .where('surahName', isEqualTo: surahName)
+        .get();
+    for (final doc in snap.docs) {
+      await doc.reference.delete();
+    }
+  }
+
   Stream<Set<int>> getBookmarks() {
     return _bookmarksCol.snapshots().map(
       (snap) =>
           snap.docs.map((d) => (d.data()['ayahNumber'] as num).toInt()).toSet(),
     );
+  }
+
+  Stream<Set<int>> getBookmarksForSurah(String surahName) {
+    return _bookmarksCol
+        .where('surahName', isEqualTo: surahName)
+        .snapshots()
+        .map(
+          (snap) => snap.docs
+              .map((doc) => (doc.data()['ayahNumber'] as num).toInt())
+              .toSet(),
+        );
+  }
+
+  Stream<List<QuranBookmark>> getQuranBookmarks() {
+    return _bookmarksCol.snapshots().map((snap) {
+      return snap.docs.map((doc) {
+        final data = doc.data();
+        return QuranBookmark(
+          ayahNumber: (data['ayahNumber'] as num?)?.toInt() ?? 1,
+          surahName: data['surahName']?.toString() ?? '',
+        );
+      }).toList();
+    });
   }
 }

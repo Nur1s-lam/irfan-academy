@@ -23,7 +23,6 @@ windows/build/
 macos/build/
 
 # Linux build
-linux/build/
 
 # Node (если есть)
 node_modules/

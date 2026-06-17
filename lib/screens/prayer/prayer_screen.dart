@@ -59,12 +59,14 @@ class _PrayerScreenState extends State<PrayerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return FutureBuilder<PrayerSchedule>(
       future: _scheduleFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppTheme.gold),
+          return Center(
+            child: CircularProgressIndicator(color: palette.primary),
           );
         }
 
@@ -122,9 +124,9 @@ class _PrayerScreenState extends State<PrayerScreen> {
                           ),
                           IconButton(
                             onPressed: _loadSchedule,
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.refresh_rounded,
-                              color: AppTheme.goldDeep,
+                              color: palette.primaryDeep,
                             ),
                           ),
                         ],
@@ -152,6 +154,8 @@ class _PrayerError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -159,9 +163,9 @@ class _PrayerError extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.location_off_rounded,
-                color: AppTheme.goldDeep,
+                color: palette.primaryDeep,
                 size: 42,
               ),
               const SizedBox(height: 14),
@@ -184,8 +188,8 @@ class _PrayerError extends StatelessWidget {
                   icon: const Icon(Icons.my_location_rounded),
                   label: const Text('Повторить'),
                   style: ElevatedButton.styleFrom(
-                    foregroundColor: AppTheme.surface,
-                    backgroundColor: AppTheme.gold,
+                    foregroundColor: palette.surface,
+                    backgroundColor: palette.primary,
                   ),
                 ),
               ),
@@ -204,14 +208,19 @@ class PrayerTimeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
     final isNext = prayer.status == PrayerStatus.next;
     final isFaint = prayer.status == PrayerStatus.faint;
-    final foreground = isFaint ? AppTheme.inkFaint : AppTheme.ink;
+    final foreground = isNext
+        ? AppTheme.inkOnLight
+        : isFaint
+            ? palette.inkFaint
+            : palette.ink;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: isNext ? AppTheme.goldSoft : AppTheme.surface,
+        color: isNext ? palette.primarySoft : palette.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: IntrinsicHeight(
@@ -223,8 +232,8 @@ class PrayerTimeRow extends StatelessWidget {
               width: 3,
               decoration: BoxDecoration(
                 color: isNext
-                    ? AppTheme.gold
-                    : AppTheme.surface.withValues(alpha: 0),
+                    ? palette.primary
+                    : palette.surface.withValues(alpha: 0),
                 borderRadius: const BorderRadius.horizontal(
                   left: Radius.circular(12),
                 ),
@@ -267,7 +276,7 @@ class PrayerTimeRow extends StatelessWidget {
                     Text(
                       prayer.time,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: isNext ? AppTheme.goldDeep : foreground,
+                        color: foreground,
                         fontWeight: isNext ? FontWeight.w900 : FontWeight.w700,
                       ),
                     ),
@@ -289,11 +298,13 @@ class _PrayerStatusIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     switch (status) {
       case PrayerStatus.done:
         return Icon(
           Icons.check_circle_rounded,
-          color: AppTheme.goldDeep.withValues(alpha: 0.58),
+          color: palette.primaryDeep.withValues(alpha: 0.58),
           size: 22,
         );
       case PrayerStatus.next:
@@ -304,13 +315,13 @@ class _PrayerStatusIcon extends StatelessWidget {
           height: 20,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: AppTheme.inkFaint, width: 1.4),
+            border: Border.all(color: palette.inkFaint, width: 1.4),
           ),
         );
       case PrayerStatus.faint:
         return Icon(
           Icons.check_circle_rounded,
-          color: AppTheme.inkFaint.withValues(alpha: 0.55),
+          color: palette.inkFaint.withValues(alpha: 0.55),
           size: 22,
         );
     }
@@ -353,6 +364,8 @@ class _PulsingPrayerDotState extends State<_PulsingPrayerDot>
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return SizedBox(
       width: 22,
       height: 22,
@@ -364,8 +377,8 @@ class _PulsingPrayerDotState extends State<_PulsingPrayerDot>
             child: Container(
               width: 13,
               height: 13,
-              decoration: const BoxDecoration(
-                color: AppTheme.gold,
+              decoration: BoxDecoration(
+                color: palette.primary,
                 shape: BoxShape.circle,
               ),
             ),

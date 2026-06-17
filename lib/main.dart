@@ -44,6 +44,7 @@ class IrfanAcademyApp extends StatelessWidget {
             themeProvider.appStyle,
             themeProvider.goldIntensity,
             headingFont: themeProvider.headingFont,
+            isDarkMode: themeProvider.isDarkMode,
           ),
           locale: const Locale('ru'),
           builder: (context, child) {
@@ -101,6 +102,7 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
     final screens = [
       HomeScreen(onTabSelected: _selectTab),
       const PrayerScreen(),
@@ -119,11 +121,11 @@ class _MainShellState extends State<MainShell> {
           bottomNavigationBar: NavigationBarTheme(
             data: NavigationBarThemeData(
               height: 68,
-              indicatorColor: AppTheme.goldSoft,
+              indicatorColor: palette.primarySoft,
               labelTextStyle: WidgetStateProperty.resolveWith((states) {
                 final selected = states.contains(WidgetState.selected);
                 return TextStyle(
-                  color: selected ? AppTheme.goldDeep : AppTheme.inkFaint,
+                  color: selected ? palette.primaryDeep : palette.inkFaint,
                   fontSize: 11,
                   fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                 );
@@ -131,7 +133,7 @@ class _MainShellState extends State<MainShell> {
               iconTheme: WidgetStateProperty.resolveWith((states) {
                 final selected = states.contains(WidgetState.selected);
                 return IconThemeData(
-                  color: selected ? AppTheme.goldDeep : AppTheme.inkFaint,
+                  color: selected ? palette.primaryDeep : palette.inkFaint,
                   size: 23,
                 );
               }),
@@ -139,7 +141,7 @@ class _MainShellState extends State<MainShell> {
             child: NavigationBar(
               selectedIndex: _selectedIndex,
               onDestinationSelected: _selectTab,
-              backgroundColor: AppTheme.surface,
+              backgroundColor: palette.surface,
               surfaceTintColor: Colors.transparent,
               destinations: const [
                 NavigationDestination(

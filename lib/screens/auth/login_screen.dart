@@ -70,8 +70,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return Scaffold(
-      backgroundColor: AppTheme.bg,
+      backgroundColor: palette.background,
       body: SafeArea(
         child: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -94,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   textAlign: TextAlign.center,
                   style: Theme.of(
                     context,
-                  ).textTheme.bodyLarge?.copyWith(color: AppTheme.inkSoft),
+                  ).textTheme.bodyLarge?.copyWith(color: palette.inkSoft),
                 ),
                 const SizedBox(height: 34),
                 TextFormField(
@@ -102,6 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   decoration: authInputDecoration(
+                    context: context,
                     label: 'Email',
                     icon: Icons.email_outlined,
                   ),
@@ -124,6 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   onFieldSubmitted: (_) => _isLoading ? null : _signIn(),
                   decoration:
                       authInputDecoration(
+                        context: context,
                         label: 'Пароль',
                         icon: Icons.lock_outline_rounded,
                       ).copyWith(
@@ -137,7 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             _obscurePassword
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
-                            color: AppTheme.inkFaint,
+                            color: palette.inkFaint,
                           ),
                         ),
                       ),
@@ -179,29 +183,31 @@ class _AuthHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return Column(
       children: [
         Container(
           width: 82,
           height: 82,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppTheme.gold, AppTheme.goldDeep],
+              colors: [palette.primary, palette.primaryDeep],
             ),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.goldDeep.withValues(alpha: 0.22),
+                color: palette.primaryDeep.withValues(alpha: 0.22),
                 blurRadius: 22,
                 offset: const Offset(0, 12),
               ),
             ],
           ),
-          child: const Icon(
+          child: Icon(
             Icons.auto_stories_rounded,
-            color: AppTheme.surface,
+            color: Theme.of(context).colorScheme.onPrimary,
             size: 38,
           ),
         ),
@@ -210,14 +216,17 @@ class _AuthHeader extends StatelessWidget {
           'Irfan Academy',
           style: Theme.of(
             context,
-          ).textTheme.headlineMedium?.copyWith(color: AppTheme.ink),
+          ).textTheme.headlineMedium?.copyWith(color: palette.ink),
         ),
         const SizedBox(height: 4),
         Directionality(
           textDirection: TextDirection.rtl,
           child: Text(
             'عرفان أكاديمية',
-            style: AppTheme.arabicText(fontSize: 22, color: AppTheme.goldDeep),
+            style: AppTheme.arabicText(
+              fontSize: 22,
+              color: palette.primaryDeep,
+            ),
           ),
         ),
       ],
@@ -226,30 +235,34 @@ class _AuthHeader extends StatelessWidget {
 }
 
 InputDecoration authInputDecoration({
+  required BuildContext context,
   required String label,
   required IconData icon,
 }) {
+  final colorScheme = Theme.of(context).colorScheme;
+  final palette = AppTheme.palette(context);
+
   return InputDecoration(
     labelText: label,
-    prefixIcon: Icon(icon, color: AppTheme.goldDeep),
+    prefixIcon: Icon(icon, color: palette.primaryDeep),
     filled: true,
-    fillColor: AppTheme.surface,
-    labelStyle: const TextStyle(color: AppTheme.inkSoft),
+    fillColor: palette.surface,
+    labelStyle: TextStyle(color: palette.inkSoft),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: AppTheme.border),
+      borderSide: BorderSide(color: palette.border),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: AppTheme.gold, width: 1.4),
+      borderSide: BorderSide(color: palette.primary, width: 1.4),
     ),
     errorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: Color(0xFFB3261E)),
+      borderSide: BorderSide(color: colorScheme.error),
     ),
     focusedErrorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: Color(0xFFB3261E), width: 1.4),
+      borderSide: BorderSide(color: colorScheme.error, width: 1.4),
     ),
   );
 }
@@ -259,9 +272,13 @@ class GoldLoader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
+    return SizedBox(
       height: 52,
-      child: Center(child: CircularProgressIndicator(color: AppTheme.gold)),
+      child: Center(
+        child: CircularProgressIndicator(
+          color: AppTheme.palette(context).primary,
+        ),
+      ),
     );
   }
 }

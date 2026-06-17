@@ -6,6 +6,8 @@ class ThemeProvider extends ChangeNotifier {
   bool showPattern = true;
   String headingFont = 'Cormorant Garamond';
   bool showSplash = true;
+  bool isDarkMode = false;
+  bool notificationsEnabled = true;
 
   void setStyle(String style) {
     if (appStyle == style) {
@@ -39,6 +41,22 @@ class ThemeProvider extends ChangeNotifier {
 
   void toggleSplash() {
     showSplash = !showSplash;
+    notifyListeners();
+  }
+
+  void setDarkMode(bool value) {
+    if (isDarkMode == value) {
+      return;
+    }
+    isDarkMode = value;
+    notifyListeners();
+  }
+
+  void setNotificationsEnabled(bool value) {
+    if (notificationsEnabled == value) {
+      return;
+    }
+    notificationsEnabled = value;
     notifyListeners();
   }
 }

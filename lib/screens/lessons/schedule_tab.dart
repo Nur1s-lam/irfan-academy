@@ -27,13 +27,15 @@ class _ScheduleTabState extends State<ScheduleTab> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return StreamBuilder<List<Lesson>>(
       stream: _firestoreService.getLessons(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting &&
             !snapshot.hasData) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppTheme.gold),
+          return Center(
+            child: CircularProgressIndicator(color: palette.primary),
           );
         }
 
@@ -77,6 +79,12 @@ class _ScheduleLessonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final timeBackground = isDarkMode
+        ? palette.primary.withValues(alpha: 0.15)
+        : palette.primarySoft;
+
     return AppCard(
       padding: EdgeInsets.zero,
       child: IntrinsicHeight(
@@ -85,9 +93,9 @@ class _ScheduleLessonCard extends StatelessWidget {
             Container(
               width: 72,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-              decoration: const BoxDecoration(
-                color: AppTheme.goldSoft,
-                borderRadius: BorderRadius.horizontal(
+              decoration: BoxDecoration(
+                color: timeBackground,
+                borderRadius: const BorderRadius.horizontal(
                   left: Radius.circular(14),
                 ),
               ),
@@ -97,6 +105,7 @@ class _ScheduleLessonCard extends StatelessWidget {
                   Text(
                     lesson.time,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: palette.ink,
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
                     ),
@@ -105,8 +114,9 @@ class _ScheduleLessonCard extends StatelessWidget {
                   Text(
                     '${lesson.durationMin} мин',
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppTheme.inkSoft,
+                      color: palette.ink,
                       fontSize: 12,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ],
@@ -139,7 +149,7 @@ class _ScheduleLessonCard extends StatelessWidget {
                     Text(
                       lesson.teacher,
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: AppTheme.inkSoft,
+                        color: palette.inkSoft,
                         fontSize: 12,
                       ),
                     ),
@@ -190,6 +200,8 @@ class _SoonTagState extends State<_SoonTag>
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return TagWidget(
       label: 'скоро',
       leading: FadeTransition(
@@ -199,8 +211,8 @@ class _SoonTagState extends State<_SoonTag>
           child: Container(
             width: 7,
             height: 7,
-            decoration: const BoxDecoration(
-              color: AppTheme.gold,
+            decoration: BoxDecoration(
+              color: palette.primary,
               shape: BoxShape.circle,
             ),
           ),

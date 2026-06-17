@@ -47,6 +47,8 @@ class _QiblaCompassState extends State<QiblaCompass>
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return AppCard(
       child: Column(
         children: [
@@ -84,6 +86,7 @@ class _QiblaCompassState extends State<QiblaCompass>
                         child: CustomPaint(
                           painter: _QiblaCompassPainter(
                             qiblaDegrees: relativeQibla,
+                            palette: palette,
                           ),
                         ),
                       ),
@@ -93,7 +96,7 @@ class _QiblaCompassState extends State<QiblaCompass>
                   Text(
                     '${widget.qiblaDirection.round()}° ${_directionLabel(widget.qiblaDirection)}',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: AppTheme.goldDeep,
+                      color: palette.primaryDeep,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -146,9 +149,13 @@ class _QiblaCompassState extends State<QiblaCompass>
 }
 
 class _QiblaCompassPainter extends CustomPainter {
-  const _QiblaCompassPainter({required this.qiblaDegrees});
+  const _QiblaCompassPainter({
+    required this.qiblaDegrees,
+    required this.palette,
+  });
 
   final double qiblaDegrees;
+  final AppPalette palette;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -156,7 +163,7 @@ class _QiblaCompassPainter extends CustomPainter {
     final radius = math.min(size.width, size.height) / 2 - 10;
 
     final circlePaint = Paint()
-      ..color = AppTheme.goldSoft
+      ..color = palette.primarySoft
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.4;
     canvas.drawCircle(center, radius, circlePaint);
@@ -170,7 +177,7 @@ class _QiblaCompassPainter extends CustomPainter {
       center,
       6,
       Paint()
-        ..color = AppTheme.gold
+        ..color = palette.primary
         ..style = PaintingStyle.fill,
     );
   }
@@ -183,7 +190,7 @@ class _QiblaCompassPainter extends CustomPainter {
       final start = _point(center, startRadius, degrees.toDouble());
       final end = _point(center, endRadius, degrees.toDouble());
       final paint = Paint()
-        ..color = isMajor ? AppTheme.goldDeep : AppTheme.inkFaint
+        ..color = isMajor ? palette.primaryDeep : palette.inkFaint
         ..strokeWidth = isMajor ? 2.1 : 1
         ..strokeCap = StrokeCap.round;
       canvas.drawLine(start, end, paint);
@@ -208,7 +215,7 @@ class _QiblaCompassPainter extends CustomPainter {
         text: TextSpan(
           text: entry.value,
           style: TextStyle(
-            color: isNorth ? AppTheme.goldDeep : AppTheme.ink,
+            color: isNorth ? palette.primaryDeep : palette.ink,
             fontSize: isNorth ? 17 : 13,
             fontWeight: isNorth ? FontWeight.w900 : FontWeight.w800,
           ),
@@ -238,7 +245,7 @@ class _QiblaCompassPainter extends CustomPainter {
     canvas.drawPath(
       topPath,
       Paint()
-        ..color = AppTheme.gold
+        ..color = palette.primary
         ..style = PaintingStyle.fill,
     );
 
@@ -251,7 +258,7 @@ class _QiblaCompassPainter extends CustomPainter {
     canvas.drawPath(
       bottomPath,
       Paint()
-        ..color = AppTheme.inkFaint
+        ..color = palette.inkFaint
         ..style = PaintingStyle.fill,
     );
 
@@ -263,13 +270,13 @@ class _QiblaCompassPainter extends CustomPainter {
     canvas.drawRRect(
       RRect.fromRectAndRadius(rect, const Radius.circular(2)),
       Paint()
-        ..color = AppTheme.ink
+        ..color = palette.ink
         ..style = PaintingStyle.fill,
     );
     canvas.drawRRect(
       RRect.fromRectAndRadius(rect, const Radius.circular(2)),
       Paint()
-        ..color = AppTheme.gold
+        ..color = palette.primary
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.4,
     );
@@ -285,6 +292,7 @@ class _QiblaCompassPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _QiblaCompassPainter oldDelegate) {
-    return oldDelegate.qiblaDegrees != qiblaDegrees;
+    return oldDelegate.qiblaDegrees != qiblaDegrees ||
+        oldDelegate.palette != palette;
   }
 }

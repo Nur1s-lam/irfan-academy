@@ -11,12 +11,13 @@ Future<void> showVideoPlayerModal({
   required List<VideoLesson> videos,
   required int initialIndex,
 }) {
+  final palette = AppTheme.palette(context);
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: AppTheme.surface,
-    barrierColor: AppTheme.ink.withValues(alpha: 0.42),
+    backgroundColor: palette.surface,
+    barrierColor: palette.ink.withValues(alpha: 0.42),
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
@@ -114,6 +115,8 @@ class _VideoPlayerModalState extends State<_VideoPlayerModal> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+    final onPrimary = Theme.of(context).colorScheme.onPrimary;
     final clampedSeconds = _currentSeconds.clamp(0, _video.totalSeconds);
 
     return Padding(
@@ -133,7 +136,7 @@ class _VideoPlayerModalState extends State<_VideoPlayerModal> {
                 width: 42,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppTheme.inkFaint.withValues(alpha: 0.35),
+                  color: palette.inkFaint.withValues(alpha: 0.35),
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
@@ -148,13 +151,13 @@ class _VideoPlayerModalState extends State<_VideoPlayerModal> {
               height: 210,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: AppTheme.ink,
+                color: palette.ink,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Center(
+              child: Center(
                 child: Icon(
                   Icons.play_circle_fill_rounded,
-                  color: AppTheme.surface,
+                  color: onPrimary,
                   size: 72,
                 ),
               ),
@@ -162,10 +165,10 @@ class _VideoPlayerModalState extends State<_VideoPlayerModal> {
             const SizedBox(height: 16),
             SliderTheme(
               data: SliderTheme.of(context).copyWith(
-                activeTrackColor: AppTheme.gold,
-                inactiveTrackColor: AppTheme.goldSoft,
-                thumbColor: AppTheme.goldDeep,
-                overlayColor: AppTheme.gold.withValues(alpha: 0.12),
+                activeTrackColor: palette.primary,
+                inactiveTrackColor: palette.primarySoft,
+                thumbColor: palette.primaryDeep,
+                overlayColor: palette.primary.withValues(alpha: 0.12),
               ),
               child: Slider(
                 min: 0,
@@ -182,14 +185,14 @@ class _VideoPlayerModalState extends State<_VideoPlayerModal> {
                 Text(
                   '${_formatTime(clampedSeconds)} / ${_video.duration}',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: AppTheme.inkSoft,
+                    color: palette.inkSoft,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 Text(
                   _isPlaying ? 'Воспроизведение' : 'Пауза',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: AppTheme.goldDeep,
+                    color: palette.primaryDeep,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -258,10 +261,12 @@ class _ControlButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return Tooltip(
       message: label,
       child: Material(
-        color: active ? AppTheme.goldSoft : AppTheme.surface,
+        color: active ? palette.primarySoft : palette.surface,
         shape: const CircleBorder(),
         child: InkWell(
           onTap: onTap,
@@ -271,7 +276,7 @@ class _ControlButton extends StatelessWidget {
             height: 44,
             child: Icon(
               icon,
-              color: active ? AppTheme.goldDeep : AppTheme.inkSoft,
+              color: active ? AppTheme.inkOnLight : palette.inkSoft,
               size: 23,
             ),
           ),
@@ -289,10 +294,13 @@ class _PlayButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+    final onPrimary = Theme.of(context).colorScheme.onPrimary;
+
     return Tooltip(
       message: isPlaying ? 'Пауза' : 'Плей',
       child: Material(
-        color: AppTheme.gold,
+        color: palette.primary,
         shape: const CircleBorder(),
         child: InkWell(
           onTap: onTap,
@@ -302,7 +310,7 @@ class _PlayButton extends StatelessWidget {
             height: 54,
             child: Icon(
               isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-              color: AppTheme.surface,
+              color: onPrimary,
               size: 30,
             ),
           ),
@@ -320,8 +328,10 @@ class _SpeedButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return Material(
-      color: AppTheme.goldSoft,
+      color: palette.primarySoft,
       borderRadius: BorderRadius.circular(999),
       child: InkWell(
         onTap: onTap,
@@ -333,7 +343,7 @@ class _SpeedButton extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: AppTheme.goldDeep,
+                color: AppTheme.inkOnLight,
                 fontWeight: FontWeight.w900,
               ),
             ),

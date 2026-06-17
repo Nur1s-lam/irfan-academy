@@ -5,12 +5,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../models/achievement.dart';
 import '../../models/user_profile.dart';
-import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/gold_button.dart';
 import '../../widgets/ring_progress.dart';
+import 'settings_sheet.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key, required this.onGoToQuran});
@@ -28,15 +28,28 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return Center(
+        child: Text(
+          'Войдите в аккаунт, чтобы открыть профиль',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      );
+    }
+
+    final uid = user.uid;
 
     return StreamBuilder<UserProfile?>(
       stream: FirestoreService(uid).getUserProfile(),
       builder: (context, snapshot) {
         final profile = snapshot.data;
         if (profile == null) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppTheme.gold),
+          return Center(
+            child: CircularProgressIndicator(
+              color: AppTheme.palette(context).primary,
+            ),
           );
         }
 
@@ -90,19 +103,22 @@ class _ProfileBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+    final onPrimary = Theme.of(context).colorScheme.onPrimary;
+
     return Container(
-      height: 172,
+      constraints: const BoxConstraints(minHeight: 172),
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppTheme.gold, AppTheme.goldDeep],
+          colors: [palette.primary, palette.primaryDeep],
         ),
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.goldDeep.withValues(alpha: 0.22),
+            color: palette.primaryDeep.withValues(alpha: 0.22),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -113,44 +129,44 @@ class _ProfileBanner extends StatelessWidget {
         child: Stack(
           children: [
             Positioned.fill(
-              child: CustomPaint(painter: _BannerPatternPainter()),
+              child: CustomPaint(
+                painter: _BannerPatternPainter(color: onPrimary),
+              ),
             ),
             Positioned(
               top: 12,
               right: 12,
               child: IconButton(
-                onPressed: () async {
-                  await AuthService().signOut();
-                  if (context.mounted) {
-                    Navigator.of(
-                      context,
-                    ).pushNamedAndRemoveUntil('/', (route) => false);
-                  }
-                },
-                icon: const Icon(
+                onPressed: () => showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => const SettingsSheet(),
+                ),
+                icon: Icon(
                   Icons.settings_rounded,
-                  color: AppTheme.surface,
+                  color: onPrimary,
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(20, 52, 20, 20),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
                     width: 72,
                     height: 72,
                     alignment: Alignment.center,
-                    decoration: const BoxDecoration(
-                      color: AppTheme.surface,
+                    decoration: BoxDecoration(
+                      color: palette.surface,
                       shape: BoxShape.circle,
                     ),
                     child: Text(
                       _initials(profile.name),
                       style: Theme.of(context).textTheme.headlineMedium
                           ?.copyWith(
-                            color: AppTheme.goldDeep,
+                            color: palette.primaryDeep,
                             fontWeight: FontWeight.w900,
                           ),
                     ),
@@ -160,7 +176,8 @@ class _ProfileBanner extends StatelessWidget {
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 6),
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -169,7 +186,7 @@ class _ProfileBanner extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.titleLarge
                                 ?.copyWith(
-                                  color: AppTheme.surface,
+                                  color: onPrimary,
                                   fontSize: 20,
                                   fontWeight: FontWeight.w900,
                                 ),
@@ -177,9 +194,11 @@ class _ProfileBanner extends StatelessWidget {
                           const SizedBox(height: 6),
                           Text(
                             '${profile.group} · ${profile.role}',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
-                                  color: AppTheme.surface.withValues(
+                                  color: onPrimary.withValues(
                                     alpha: 0.8,
                                   ),
                                   fontSize: 13,
@@ -220,13 +239,21 @@ class _StatsRow extends StatelessWidget {
       _StatData('${profile.streakDays}', 'Дней подряд'),
     ];
 
-    return Row(
-      children: [
-        for (var index = 0; index < stats.length; index++) ...[
-          if (index > 0) const SizedBox(width: 10),
-          Expanded(child: _StatCard(stat: stats[index])),
-        ],
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 10.0;
+        final columns = constraints.maxWidth < 340 ? 1 : 3;
+        final width = (constraints.maxWidth - gap * (columns - 1)) / columns;
+
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final stat in stats)
+              SizedBox(width: width, child: _StatCard(stat: stat)),
+          ],
+        );
+      },
     );
   }
 }
@@ -238,6 +265,8 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return AppCard(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
       child: Column(
@@ -246,7 +275,7 @@ class _StatCard extends StatelessWidget {
           Text(
             stat.value,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: AppTheme.gold,
+              color: palette.primary,
               fontSize: 24,
               fontWeight: FontWeight.w900,
             ),
@@ -258,7 +287,7 @@ class _StatCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppTheme.inkSoft,
+              color: palette.inkSoft,
               fontSize: 11,
             ),
           ),
@@ -276,38 +305,57 @@ class _MemorizationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return AppCard(
-      child: Row(
-        children: [
-          RingProgress(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 340;
+          final progress = RingProgress(
             percent: profile.quranProgress,
-            color: AppTheme.gold,
-            size: 100,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
+            color: palette.primary,
+            size: isCompact ? 92 : 100,
+          );
+          final content = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Заучивание Корана',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Сура ${profile.currentSura} · аят ${profile.currentAyah}',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 14),
+              GoldButton(
+                label: 'Продолжить',
+                icon: Icons.menu_book_rounded,
+                onPressed: onContinue,
+              ),
+            ],
+          );
+
+          if (isCompact) {
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Заучивание Корана',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Сура ${profile.currentSura} · аят ${profile.currentAyah}',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 14),
-                GoldButton(
-                  label: 'Продолжить',
-                  icon: Icons.menu_book_rounded,
-                  onPressed: onContinue,
-                ),
+                progress,
+                const SizedBox(height: 16),
+                content,
               ],
-            ),
-          ),
-        ],
+            );
+          }
+
+          return Row(
+            children: [
+              progress,
+              const SizedBox(width: 16),
+              Expanded(child: content),
+            ],
+          );
+        },
       ),
     );
   }
@@ -323,7 +371,8 @@ class _AchievementsGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         const gap = 12.0;
-        final width = (constraints.maxWidth - gap) / 2;
+        final columns = constraints.maxWidth < 360 ? 1 : 2;
+        final width = (constraints.maxWidth - gap * (columns - 1)) / columns;
         return Wrap(
           spacing: gap,
           runSpacing: gap,
@@ -331,7 +380,6 @@ class _AchievementsGrid extends StatelessWidget {
             for (final achievement in achievements)
               SizedBox(
                 width: width,
-                height: 142,
                 child: _AchievementCard(achievement: achievement),
               ),
           ],
@@ -348,20 +396,22 @@ class _AchievementCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
     final unlocked = achievement.isUnlocked;
+    final onGold = AppTheme.inkOnLight;
 
     return AnimatedContainer(
       duration: AppTheme.motion,
       curve: AppTheme.motionCurve,
-      height: double.infinity,
+      constraints: const BoxConstraints(minHeight: 156),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: unlocked ? AppTheme.goldSoft : AppTheme.surface,
+        color: unlocked ? palette.primarySoft : palette.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: unlocked ? AppTheme.gold : AppTheme.border),
+        border: Border.all(color: unlocked ? palette.primary : palette.border),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.ink.withValues(alpha: 0.04),
+            color: palette.ink.withValues(alpha: 0.04),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -373,7 +423,7 @@ class _AchievementCard extends StatelessWidget {
         children: [
           Icon(
             Icons.emoji_events_rounded,
-            color: unlocked ? AppTheme.goldDeep : AppTheme.inkFaint,
+            color: unlocked ? palette.primaryDeep : palette.inkFaint,
             size: 28,
           ),
           const SizedBox(height: 12),
@@ -382,17 +432,17 @@ class _AchievementCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: unlocked ? AppTheme.ink : AppTheme.inkSoft,
+              color: unlocked ? onGold : palette.inkSoft,
               fontSize: 13,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           if (unlocked)
             Text(
               'Выполнено',
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: AppTheme.goldDeep,
+                color: onGold,
                 fontSize: 11,
                 fontWeight: FontWeight.w900,
               ),
@@ -403,15 +453,15 @@ class _AchievementCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: achievement.progress,
                 minHeight: 5,
-                color: AppTheme.gold,
-                backgroundColor: AppTheme.goldSoft,
+                color: palette.primary,
+                backgroundColor: palette.primarySoft,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               '${(achievement.progress * 100).round()}%',
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: AppTheme.inkFaint,
+                color: palette.inkFaint,
                 fontSize: 11,
                 fontWeight: FontWeight.w900,
               ),
@@ -424,10 +474,14 @@ class _AchievementCard extends StatelessWidget {
 }
 
 class _BannerPatternPainter extends CustomPainter {
+  const _BannerPatternPainter({required this.color});
+
+  final Color color;
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppTheme.surface.withValues(alpha: 0.08)
+      ..color = color.withValues(alpha: 0.08)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.1;
 
@@ -447,7 +501,9 @@ class _BannerPatternPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _BannerPatternPainter oldDelegate) {
+    return oldDelegate.color != color;
+  }
 }
 
 class _StatData {

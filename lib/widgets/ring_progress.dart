@@ -60,6 +60,8 @@ class _RingProgressState extends State<RingProgress>
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return SizedBox(
       width: widget.size,
       height: widget.size,
@@ -70,6 +72,7 @@ class _RingProgressState extends State<RingProgress>
             painter: _RingProgressPainter(
               progress: _animation.value,
               color: widget.color,
+              trackColor: palette.border,
             ),
             child: Center(
               child: Text(
@@ -89,17 +92,22 @@ class _RingProgressState extends State<RingProgress>
 }
 
 class _RingProgressPainter extends CustomPainter {
-  const _RingProgressPainter({required this.progress, required this.color});
+  const _RingProgressPainter({
+    required this.progress,
+    required this.color,
+    required this.trackColor,
+  });
 
   final double progress;
   final Color color;
+  final Color trackColor;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2 - 7;
     final track = Paint()
-      ..color = AppTheme.border
+      ..color = trackColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 10
       ..strokeCap = StrokeCap.round;
@@ -121,6 +129,8 @@ class _RingProgressPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _RingProgressPainter oldDelegate) {
-    return oldDelegate.progress != progress || oldDelegate.color != color;
+    return oldDelegate.progress != progress ||
+        oldDelegate.color != color ||
+        oldDelegate.trackColor != trackColor;
   }
 }

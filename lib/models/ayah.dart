@@ -26,4 +26,18 @@ class Ayah {
   final String translation;
   final List<TajweedSegment> tajweed;
   bool isBookmarked;
+
+  factory Ayah.fromPlainText(
+    int number,
+    String arabicText,
+    String translation,
+  ) {
+    return Ayah(
+      number: number,
+      arabic: arabicText,
+      translation: translation,
+      tajweed: const [],
+      isBookmarked: false,
+    );
+  }
 }

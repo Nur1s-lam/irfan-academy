@@ -38,6 +38,8 @@ class _VideoLessonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return AppCard(
       onTap: onTap,
       child: Row(
@@ -46,12 +48,12 @@ class _VideoLessonCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppTheme.goldSoft,
+              color: palette.primarySoft,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.play_circle_outline_rounded,
-              color: AppTheme.goldDeep,
+              color: AppTheme.inkOnLight,
             ),
           ),
           const SizedBox(width: 14),
@@ -62,7 +64,7 @@ class _VideoLessonCard extends StatelessWidget {
                 Text(
                   'УРОК ${video.number}',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: AppTheme.inkFaint,
+                    color: palette.inkFaint,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0,
                   ),
@@ -79,7 +81,7 @@ class _VideoLessonCard extends StatelessWidget {
                 Text(
                   video.duration,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: AppTheme.inkSoft,
+                    color: palette.inkSoft,
                     fontSize: 12,
                   ),
                 ),
@@ -87,9 +89,9 @@ class _VideoLessonCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          const Icon(
+          Icon(
             Icons.arrow_forward_ios_rounded,
-            color: AppTheme.inkFaint,
+            color: palette.inkFaint,
             size: 18,
           ),
         ],

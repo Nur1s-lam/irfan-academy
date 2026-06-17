@@ -12,6 +12,7 @@ class HomeworkTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final firestoreService = FirestoreService(uid);
 
@@ -20,8 +21,8 @@ class HomeworkTab extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting &&
             !snapshot.hasData) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppTheme.gold),
+          return Center(
+            child: CircularProgressIndicator(color: palette.primary),
           );
         }
 
@@ -63,11 +64,12 @@ class _HomeworkCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
     final statusText = _statusText(item);
     final statusColor = item.isDone || item.status == 'в_процессе'
-        ? AppTheme.goldDeep
-        : AppTheme.inkFaint;
-    final textColor = item.isDone ? AppTheme.inkFaint : AppTheme.ink;
+        ? palette.primaryDeep
+        : palette.inkFaint;
+    final textColor = item.isDone ? palette.inkFaint : palette.ink;
 
     return AppCard(
       child: Row(
@@ -93,7 +95,7 @@ class _HomeworkCard extends StatelessWidget {
                               decoration: item.isDone
                                   ? TextDecoration.lineThrough
                                   : TextDecoration.none,
-                              decorationColor: AppTheme.inkFaint,
+                              decorationColor: palette.inkFaint,
                             ),
                       ),
                     ),
@@ -136,8 +138,10 @@ class _HomeworkCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return Material(
-      color: AppTheme.surface.withValues(alpha: 0),
+      color: palette.surface.withValues(alpha: 0),
       shape: const CircleBorder(),
       child: InkWell(
         onTap: onTap,
@@ -150,13 +154,13 @@ class _HomeworkCheckbox extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: AppTheme.gold, width: 1.8),
-            color: done ? AppTheme.goldSoft : AppTheme.surface,
+            border: Border.all(color: palette.primary, width: 1.8),
+            color: done ? palette.primarySoft : palette.surface,
           ),
           child: done
-              ? const Icon(
+              ? Icon(
                   Icons.check_rounded,
-                  color: AppTheme.goldDeep,
+                  color: palette.primaryDeep,
                   size: 24,
                 )
               : const SizedBox.shrink(),

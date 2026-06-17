@@ -62,14 +62,15 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
+    final palette = AppTheme.palette(context);
 
     return StreamBuilder<UserProfile?>(
       stream: FirestoreService(uid).getUserProfile(),
       builder: (context, snapshot) {
         final profile = snapshot.data;
         if (profile == null) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppTheme.gold),
+          return Center(
+            child: CircularProgressIndicator(color: palette.primary),
           );
         }
 
@@ -113,20 +114,22 @@ class _HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return Row(
       children: [
         Container(
           width: 52,
           height: 52,
           alignment: Alignment.center,
-          decoration: const BoxDecoration(
-            color: AppTheme.goldSoft,
+          decoration: BoxDecoration(
+            color: palette.primarySoft,
             shape: BoxShape.circle,
           ),
           child: Text(
             _initials(profile.name),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: AppTheme.goldDeep,
+              color: palette.primaryDeep,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -140,7 +143,7 @@ class _HomeHeader extends StatelessWidget {
                 'Ассаламу алейкум 👋',
                 style: Theme.of(
                   context,
-                ).textTheme.bodyMedium?.copyWith(color: AppTheme.inkSoft),
+                ).textTheme.bodyMedium?.copyWith(color: palette.inkSoft),
               ),
               const SizedBox(height: 3),
               Text(profile.name, style: Theme.of(context).textTheme.titleLarge),
@@ -155,10 +158,10 @@ class _HomeHeader extends StatelessWidget {
             children: [
               Positioned.fill(
                 child: IconButton(
-                  onPressed: () {},
-                  icon: const Icon(
+                  onPressed: () => _showNotificationsSheet(context),
+                  icon: Icon(
                     Icons.notifications_none_rounded,
-                    color: AppTheme.ink,
+                    color: palette.ink,
                   ),
                 ),
               ),
@@ -168,8 +171,8 @@ class _HomeHeader extends StatelessWidget {
                 child: Container(
                   width: 9,
                   height: 9,
-                  decoration: const BoxDecoration(
-                    color: AppTheme.gold,
+                  decoration: BoxDecoration(
+                    color: palette.primary,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -178,6 +181,17 @@ class _HomeHeader extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _showNotificationsSheet(BuildContext context) {
+    final palette = AppTheme.palette(context);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: palette.ink.withValues(alpha: 0.42),
+      builder: (context) => const _NotificationsSheet(),
     );
   }
 
@@ -190,6 +204,183 @@ class _HomeHeader extends StatelessWidget {
   }
 }
 
+class _NotificationsSheet extends StatelessWidget {
+  const _NotificationsSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+    final notifications = [
+      _NotificationItem(
+        icon: Icons.schedule_rounded,
+        title: 'Напоминание о намазе',
+        message: 'Аср начнётся сегодня в 17:18.',
+        time: 'Сегодня',
+        highlighted: true,
+      ),
+      _NotificationItem(
+        icon: Icons.school_rounded,
+        title: 'Урок таджвида',
+        message: 'Повторите правила Нун сакина и танвин перед занятием.',
+        time: '2 часа назад',
+      ),
+      _NotificationItem(
+        icon: Icons.menu_book_rounded,
+        title: 'Продолжите чтение',
+        message: 'Вы остановились на текущем аяте в разделе Коран.',
+        time: 'Вчера',
+      ),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: palette.background,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 42,
+              height: 4,
+              decoration: BoxDecoration(
+                color: palette.inkFaint.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            const SizedBox(height: 14),
+            AppCard(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Уведомления',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: palette.inkSoft,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  for (var index = 0; index < notifications.length; index++) ...[
+                    if (index > 0)
+                      Divider(
+                        height: 18,
+                        color: palette.inkFaint.withValues(alpha: 0.16),
+                      ),
+                    _NotificationTile(item: notifications[index]),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationItem {
+  const _NotificationItem({
+    required this.icon,
+    required this.title,
+    required this.message,
+    required this.time,
+    this.highlighted = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final String time;
+  final bool highlighted;
+}
+
+class _NotificationTile extends StatelessWidget {
+  const _NotificationTile({required this.item});
+
+  final _NotificationItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+    final iconColor = item.highlighted ? palette.primaryDeep : palette.inkSoft;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: item.highlighted ? palette.primarySoft : palette.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: palette.border),
+          ),
+          child: Icon(
+            item.icon,
+            color: item.highlighted ? AppTheme.inkOnLight : iconColor,
+            size: 22,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    item.time,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: palette.inkFaint,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                item.message,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: palette.inkSoft,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _NextPrayerCard extends StatelessWidget {
   const _NextPrayerCard({required this.countdown, required this.onTap});
 
@@ -198,23 +389,26 @@ class _NextPrayerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+    final onPrimary = Theme.of(context).colorScheme.onPrimary;
+
     return Material(
-      color: AppTheme.surface.withValues(alpha: 0),
+      color: palette.surface.withValues(alpha: 0),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Ink(
           height: 190,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppTheme.gold, AppTheme.goldDeep],
+              colors: [palette.primary, palette.primaryDeep],
             ),
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.goldDeep.withValues(alpha: 0.24),
+                color: palette.primaryDeep.withValues(alpha: 0.24),
                 blurRadius: 24,
                 offset: const Offset(0, 12),
               ),
@@ -225,7 +419,9 @@ class _NextPrayerCard extends StatelessWidget {
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: CustomPaint(painter: _PrayerPatternPainter()),
+                  child: CustomPaint(
+                    painter: _PrayerPatternPainter(color: onPrimary),
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(20),
@@ -241,15 +437,15 @@ class _NextPrayerCard extends StatelessWidget {
                                 Text(
                                   'Следующий намаз',
                                   style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(color: AppTheme.surface),
+                                      ?.copyWith(color: onPrimary),
                                 ),
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.place_rounded,
                                       size: 15,
-                                      color: AppTheme.surface,
+                                      color: onPrimary,
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
@@ -258,7 +454,7 @@ class _NextPrayerCard extends StatelessWidget {
                                           .textTheme
                                           .labelMedium
                                           ?.copyWith(
-                                            color: AppTheme.surface,
+                                            color: onPrimary,
                                             fontWeight: FontWeight.w800,
                                           ),
                                     ),
@@ -273,7 +469,7 @@ class _NextPrayerCard extends StatelessWidget {
                               'العصر',
                               style: AppTheme.arabicText(
                                 fontSize: 34,
-                                color: AppTheme.surface,
+                                color: onPrimary,
                               ),
                             ),
                           ),
@@ -290,7 +486,7 @@ class _NextPrayerCard extends StatelessWidget {
                                 Text(
                                   'Аср',
                                   style: Theme.of(context).textTheme.titleLarge
-                                      ?.copyWith(color: AppTheme.surface),
+                                      ?.copyWith(color: onPrimary),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
@@ -298,7 +494,7 @@ class _NextPrayerCard extends StatelessWidget {
                                   style: Theme.of(context)
                                       .textTheme
                                       .headlineLarge
-                                      ?.copyWith(color: AppTheme.surface),
+                                      ?.copyWith(color: onPrimary),
                                 ),
                               ],
                             ),
@@ -309,14 +505,14 @@ class _NextPrayerCard extends StatelessWidget {
                               Text(
                                 'осталось',
                                 style: Theme.of(context).textTheme.labelMedium
-                                    ?.copyWith(color: AppTheme.surface),
+                                    ?.copyWith(color: onPrimary),
                               ),
                               const SizedBox(height: 6),
                               Text(
                                 countdown,
                                 style: Theme.of(context).textTheme.titleMedium
                                     ?.copyWith(
-                                      color: AppTheme.surface,
+                                      color: onPrimary,
                                       fontFeatures: const [
                                         FontFeature.tabularFigures(),
                                       ],
@@ -381,8 +577,11 @@ class _QuickAccessButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+    const onGold = AppTheme.inkOnLight;
+
     return Material(
-      color: AppTheme.goldSoft,
+      color: palette.primarySoft,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: item.onTap,
@@ -392,14 +591,14 @@ class _QuickAccessButton extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(item.icon, color: AppTheme.goldDeep, size: 24),
+              Icon(item.icon, color: onGold, size: 24),
               const SizedBox(height: 7),
               Text(
                 item.label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: AppTheme.goldDeep,
+                  color: onGold,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -419,6 +618,7 @@ class _ProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
     final percent = (profile.quranProgress * 100).round();
 
     return AppCard(
@@ -434,12 +634,13 @@ class _ProgressCard extends StatelessWidget {
                   size: const Size(96, 96),
                   painter: _ProgressRingPainter(
                     progress: profile.quranProgress,
+                    palette: palette,
                   ),
                 ),
                 Text(
                   '$percent%',
-                  style: const TextStyle(
-                    color: AppTheme.ink,
+                  style: TextStyle(
+                    color: palette.ink,
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
                   ),
@@ -498,6 +699,8 @@ class _TodayLessonsState extends State<_TodayLessons> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return AppCard(
       child: Column(
         children: [
@@ -521,9 +724,9 @@ class _TodayLessonsState extends State<_TodayLessons> {
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting &&
                   !snapshot.hasData) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 18),
-                  child: CircularProgressIndicator(color: AppTheme.gold),
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  child: CircularProgressIndicator(color: palette.primary),
                 );
               }
 
@@ -545,7 +748,7 @@ class _TodayLessonsState extends State<_TodayLessons> {
                 children: [
                   for (var index = 0; index < lessons.length; index++) ...[
                     if (index > 0)
-                      Divider(color: AppTheme.inkFaint.withValues(alpha: 0.16)),
+                      Divider(color: palette.inkFaint.withValues(alpha: 0.16)),
                     _LessonRow(lesson: lessons[index]),
                   ],
                 ],
@@ -565,6 +768,8 @@ class _LessonRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -575,7 +780,7 @@ class _LessonRow extends StatelessWidget {
             child: Text(
               lesson.time,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: AppTheme.goldDeep,
+                color: palette.primaryDeep,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -591,7 +796,7 @@ class _LessonRow extends StatelessWidget {
                       lesson.type,
                       style: Theme.of(
                         context,
-                      ).textTheme.labelLarge?.copyWith(color: AppTheme.ink),
+                      ).textTheme.labelLarge?.copyWith(color: palette.ink),
                     ),
                     if (lesson.isSoon) ...[
                       const SizedBox(width: 8),
@@ -657,6 +862,8 @@ class _VideoLessonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return SizedBox(
       width: 190,
       child: AppCard(
@@ -667,12 +874,12 @@ class _VideoLessonCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppTheme.goldSoft,
+                color: palette.primarySoft,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.play_circle_outline_rounded,
-                color: AppTheme.goldDeep,
+                color: AppTheme.inkOnLight,
               ),
             ),
             const SizedBox(height: 14),
@@ -687,10 +894,10 @@ class _VideoLessonCard extends StatelessWidget {
             const SizedBox(height: 10),
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.timer_outlined,
                   size: 16,
-                  color: AppTheme.inkFaint,
+                  color: palette.inkFaint,
                 ),
                 const SizedBox(width: 5),
                 Text(
@@ -742,11 +949,13 @@ class _SoonTagState extends State<_SoonTag>
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return TagWidget(
       label: 'скоро',
       icon: null,
-      backgroundColor: AppTheme.goldSoft,
-      foregroundColor: AppTheme.goldDeep,
+      backgroundColor: palette.primarySoft,
+      foregroundColor: AppTheme.inkOnLight,
       leading: FadeTransition(
         opacity: _opacity,
         child: ScaleTransition(
@@ -754,8 +963,8 @@ class _SoonTagState extends State<_SoonTag>
           child: Container(
             width: 7,
             height: 7,
-            decoration: const BoxDecoration(
-              color: AppTheme.gold,
+            decoration: BoxDecoration(
+              color: palette.primary,
               shape: BoxShape.circle,
             ),
           ),
@@ -766,10 +975,14 @@ class _SoonTagState extends State<_SoonTag>
 }
 
 class _PrayerPatternPainter extends CustomPainter {
+  const _PrayerPatternPainter({required this.color});
+
+  final Color color;
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppTheme.surface.withValues(alpha: 0.1)
+      ..color = color.withValues(alpha: 0.1)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
 
@@ -789,25 +1002,28 @@ class _PrayerPatternPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _PrayerPatternPainter oldDelegate) {
+    return oldDelegate.color != color;
+  }
 }
 
 class _ProgressRingPainter extends CustomPainter {
-  const _ProgressRingPainter({required this.progress});
+  const _ProgressRingPainter({required this.progress, required this.palette});
 
   final double progress;
+  final AppPalette palette;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2 - 7;
     final trackPaint = Paint()
-      ..color = AppTheme.goldSoft
+      ..color = palette.primarySoft
       ..strokeWidth = 10
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
     final progressPaint = Paint()
-      ..color = AppTheme.gold
+      ..color = palette.primary
       ..strokeWidth = 10
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -824,7 +1040,7 @@ class _ProgressRingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ProgressRingPainter oldDelegate) {
-    return oldDelegate.progress != progress;
+    return oldDelegate.progress != progress || oldDelegate.palette != palette;
   }
 }
 

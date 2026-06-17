@@ -18,16 +18,18 @@ class AppCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     final card = AnimatedContainer(
       duration: AppTheme.motion,
       curve: AppTheme.motionCurve,
       margin: margin,
       decoration: BoxDecoration(
-        color: AppTheme.surface,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.ink.withValues(alpha: 0.06),
+            color: palette.ink.withValues(alpha: 0.06),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),

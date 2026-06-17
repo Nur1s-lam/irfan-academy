@@ -3,13 +3,19 @@ import 'dart:math' as math;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 
 import '../../models/ayah.dart';
+import '../../models/surah.dart';
 import '../../services/firestore_service.dart';
+import '../../services/quran_audio_service.dart';
+import '../../services/quran_data_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/quran_player.dart';
 import '../../widgets/tajweed_text.dart';
+import 'quran_menu_sheet.dart';
+import 'quran_search_sheet.dart';
 
 class QuranScreen extends StatefulWidget {
   const QuranScreen({super.key});
@@ -20,24 +26,40 @@ class QuranScreen extends StatefulWidget {
 
 class _QuranScreenState extends State<QuranScreen> {
   final ScrollController _scrollController = ScrollController();
-  late final List<GlobalKey> _ayahKeys;
-  Timer? _timer;
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  late List<GlobalKey> _ayahKeys;
+  StreamSubscription<Duration>? _positionSub;
+  StreamSubscription<Duration?>? _durationSub;
+  StreamSubscription<PlayerState>? _playerStateSub;
 
+  late List<Ayah> _ayahs;
+  final List<SurahInfo> _surahs = QuranDataService.getAllSurahs();
+  int _currentSurahNumber = 1;
   int _activeAyahIndex = 0;
   bool _isPlaying = false;
   bool _repeat = false;
-  double _currentProgress = 0;
+  Duration _position = Duration.zero;
+  Duration _duration = Duration.zero;
   int _speedIndex = 0;
+  double _arabicFontSize = 26;
+  bool _showTranslation = true;
+  bool _showTajweed = true;
+  String _reciter = QuranAudioService.reciter;
+  int? _loadedSurahNumber;
+  int? _loadedAyahNumber;
+  bool _handlingCompletion = false;
 
   static const _speeds = [1.0, 1.25, 1.5, 0.75];
-  static const _surahName = 'Аль-Фатиха';
+  SurahInfo get _currentSurah => _surahs[_currentSurahNumber - 1];
+
+  String get _currentSurahName => _currentSurah.nameTransliteration;
 
   FirestoreService get _firestoreService {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     return FirestoreService(uid);
   }
 
-  late final List<Ayah> _ayahs = [
+  static final List<Ayah> _fatihaAyahs = [
     Ayah(
       number: 1,
       arabic: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
@@ -179,35 +201,80 @@ class _QuranScreenState extends State<QuranScreen> {
   @override
   void initState() {
     super.initState();
+    _ayahs = _loadAyahsForSurah(_currentSurahNumber);
     _ayahKeys = List.generate(_ayahs.length, (_) => GlobalKey());
-    _timer = Timer.periodic(const Duration(milliseconds: 200), (_) {
-      if (!_isPlaying) {
+    _positionSub = _audioPlayer.positionStream.listen((position) {
+      if (mounted) {
+        setState(() => _position = position);
+      }
+    });
+    _durationSub = _audioPlayer.durationStream.listen((duration) {
+      if (mounted) {
+        setState(() => _duration = duration ?? Duration.zero);
+      }
+    });
+    _playerStateSub = _audioPlayer.playerStateStream.listen((state) {
+      if (!mounted) {
         return;
       }
-      setState(() {
-        _currentProgress += 0.02 * _speeds[_speedIndex];
-        if (_currentProgress >= 1) {
-          if (_repeat) {
-            _currentProgress = 0;
-          } else {
-            _goNext(autoPlay: true);
-          }
-        }
-      });
+
+      setState(() => _isPlaying = state.playing);
+      if (state.processingState == ProcessingState.completed) {
+        _handleAudioCompleted();
+      }
+    });
+  }
+
+  List<Ayah> _loadAyahsForSurah(int surahNumber) {
+    if (surahNumber == 1) {
+      return List<Ayah>.of(_fatihaAyahs);
+    }
+
+    return QuranDataService.getPlainAyahs(surahNumber);
+  }
+
+  void _selectSurah(SurahInfo surah) {
+    _audioPlayer.stop();
+    _clearLoadedAudio();
+    setState(() {
+      _currentSurahNumber = surah.number;
+      _ayahs = _loadAyahsForSurah(surah.number);
+      _ayahKeys = List.generate(_ayahs.length, (_) => GlobalKey());
+      _activeAyahIndex = 0;
+      _position = Duration.zero;
+      _duration = Duration.zero;
+      _isPlaying = false;
+    });
+
+    _saveQuranProgress(0);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 180),
+          curve: AppTheme.motionCurve,
+        );
+      }
     });
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _positionSub?.cancel();
+    _durationSub?.cancel();
+    _playerStateSub?.cancel();
+    _audioPlayer.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
   void _selectAyah(int index) {
+    _audioPlayer.stop();
+    _clearLoadedAudio();
     setState(() {
       _activeAyahIndex = index;
-      _currentProgress = 0;
+      _position = Duration.zero;
+      _duration = Duration.zero;
       _isPlaying = false;
     });
     _saveQuranProgress(index);
@@ -227,26 +294,155 @@ class _QuranScreenState extends State<QuranScreen> {
     );
   }
 
-  void _goNext({bool autoPlay = false}) {
+  Future<void> _goNext({bool autoPlay = false}) async {
+    final wasPlaying = _audioPlayer.playing || autoPlay;
     final nextIndex = (_activeAyahIndex + 1).clamp(0, _ayahs.length - 1);
     if (nextIndex == _activeAyahIndex && autoPlay) {
-      _isPlaying = false;
-      _currentProgress = 1;
+      await _audioPlayer.pause();
+      setState(() => _isPlaying = false);
       return;
     }
-    _activeAyahIndex = nextIndex;
-    _currentProgress = 0;
-    _isPlaying = autoPlay ? _isPlaying : false;
+    setState(() {
+      _activeAyahIndex = nextIndex;
+      _position = Duration.zero;
+      _duration = Duration.zero;
+      _isPlaying = wasPlaying;
+    });
+    _clearLoadedAudio();
     _saveQuranProgress(_activeAyahIndex);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToAyah(_activeAyahIndex);
     });
+    if (wasPlaying) {
+      await _playAyahAt(nextIndex);
+    } else {
+      await _audioPlayer.stop();
+    }
   }
 
-  void _goPrev() {
+  Future<void> _goPrev() async {
+    final wasPlaying = _audioPlayer.playing;
+    await _audioPlayer.stop();
+    _clearLoadedAudio();
     setState(() {
       _activeAyahIndex = (_activeAyahIndex - 1).clamp(0, _ayahs.length - 1);
-      _currentProgress = 0;
+      _position = Duration.zero;
+      _duration = Duration.zero;
+      _isPlaying = wasPlaying;
+    });
+    _saveQuranProgress(_activeAyahIndex);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToAyah(_activeAyahIndex);
+    });
+    if (wasPlaying) {
+      await _playAyahAt(_activeAyahIndex);
+    }
+  }
+
+  Future<void> _playCurrentAyah() async {
+    await _playAyahAt(_activeAyahIndex);
+  }
+
+  Future<void> _playAyahAt(int index) async {
+    final ayahNumber = _ayahs[index].number;
+    final surahNumber = _currentSurahNumber;
+    final url = QuranAudioService.getAyahAudioUrl(surahNumber, ayahNumber);
+
+    try {
+      await _audioPlayer.stop();
+      _clearLoadedAudio();
+      await _audioPlayer.setUrl(url);
+      _loadedSurahNumber = surahNumber;
+      _loadedAyahNumber = ayahNumber;
+      await _audioPlayer.setSpeed(_speeds[_speedIndex]);
+      await _audioPlayer.play();
+    } catch (error, stackTrace) {
+      // On web, everyayah.com can fail if the browser blocks remote audio/CORS.
+      debugPrint('Quran audio error for $url: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Не удалось загрузить аудио. Попробуйте позже.'),
+        ),
+      );
+    }
+  }
+
+  void _clearLoadedAudio() {
+    _loadedSurahNumber = null;
+    _loadedAyahNumber = null;
+  }
+
+  Future<void> _togglePlayPause() async {
+    if (_audioPlayer.playing) {
+      await _audioPlayer.pause();
+      return;
+    }
+
+    final activeAyah = _ayahs[_activeAyahIndex].number;
+    final needsNewSource =
+        _loadedSurahNumber != _currentSurahNumber ||
+        _loadedAyahNumber != activeAyah ||
+        _audioPlayer.processingState == ProcessingState.idle ||
+        _audioPlayer.processingState == ProcessingState.completed;
+
+    if (needsNewSource) {
+      await _playCurrentAyah();
+      return;
+    }
+
+    await _audioPlayer.play();
+  }
+
+  Future<void> _seekAudio(double value) async {
+    if (_duration == Duration.zero) {
+      return;
+    }
+
+    final target = Duration(
+      milliseconds: (_duration.inMilliseconds * value).round(),
+    );
+    await _audioPlayer.seek(target);
+  }
+
+  Future<void> _changeSpeed() async {
+    setState(() => _speedIndex = (_speedIndex + 1) % _speeds.length);
+    await _audioPlayer.setSpeed(_speeds[_speedIndex]);
+  }
+
+  Future<void> _handleAudioCompleted() async {
+    if (_handlingCompletion) {
+      return;
+    }
+
+    _handlingCompletion = true;
+    try {
+      if (_repeat) {
+        await _audioPlayer.seek(Duration.zero);
+        await _audioPlayer.play();
+        return;
+      }
+
+      await _goNext(autoPlay: true);
+    } finally {
+      _handlingCompletion = false;
+    }
+  }
+
+  Future<void> _selectSurahAndAyah(int surahNumber, int ayahNumber) async {
+    final surah = _surahs[surahNumber - 1];
+    await _audioPlayer.stop();
+    _clearLoadedAudio();
+    setState(() {
+      _currentSurahNumber = surah.number;
+      _ayahs = _loadAyahsForSurah(surah.number);
+      _ayahKeys = List.generate(_ayahs.length, (_) => GlobalKey());
+      _activeAyahIndex = (ayahNumber - 1).clamp(0, _ayahs.length - 1);
+      _position = Duration.zero;
+      _duration = Duration.zero;
       _isPlaying = false;
     });
     _saveQuranProgress(_activeAyahIndex);
@@ -257,53 +453,110 @@ class _QuranScreenState extends State<QuranScreen> {
 
   Future<void> _toggleBookmark(int number, Set<int> bookmarks) async {
     if (bookmarks.contains(number)) {
-      await _firestoreService.removeBookmark(number);
+      await _firestoreService.removeBookmarkFromSurah(number, _currentSurahName);
     } else {
-      await _firestoreService.addBookmark(number, _surahName);
+      await _firestoreService.addBookmark(number, _currentSurahName);
     }
   }
 
   void _saveQuranProgress(int index) {
     final ayahNumber = _ayahs[index].number;
     final progress = ayahNumber / _ayahs.length;
-    _firestoreService.updateQuranProgress(progress, _surahName, ayahNumber);
+    _firestoreService.updateQuranProgress(
+      progress,
+      _currentSurahName,
+      ayahNumber,
+    );
   }
 
   void _showSurahSheet() {
+    final palette = AppTheme.palette(context);
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppTheme.surface,
-      barrierColor: AppTheme.ink.withValues(alpha: 0.42),
+      backgroundColor: palette.surface,
+      barrierColor: palette.ink.withValues(alpha: 0.42),
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Выбор суры',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 14),
-                ListTile(
-                  minTileHeight: 52,
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Аль-Фатиха'),
-                  subtitle: const Text('7 аятов · мекканская'),
-                  trailing: const Icon(
-                    Icons.check_circle_rounded,
-                    color: AppTheme.goldDeep,
-                  ),
-                  onTap: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
+        return _SurahPickerSheet(
+          surahs: _surahs,
+          currentSurahNumber: _currentSurahNumber,
+          onSelected: (surah) {
+            Navigator.of(context).pop();
+            _selectSurah(surah);
+          },
+        );
+      },
+    );
+  }
+
+  void _showSearchSheet() {
+    final palette = AppTheme.palette(context);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: palette.surface,
+      barrierColor: palette.ink.withValues(alpha: 0.42),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return QuranSearchSheet(
+          surahs: _surahs,
+          onSelected: (result) {
+            Navigator.of(context).pop();
+            _selectSurahAndAyah(result.surah.number, result.ayahNumber);
+          },
+        );
+      },
+    );
+  }
+
+  void _showMenuSheet() {
+    final palette = AppTheme.palette(context);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: palette.surface,
+      barrierColor: palette.ink.withValues(alpha: 0.42),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return QuranMenuSheet(
+          bookmarksStream: _firestoreService.getQuranBookmarks(),
+          settings: QuranReadingSettings(
+            arabicFontSize: _arabicFontSize,
+            showTranslation: _showTranslation,
+            showTajweed: _showTajweed,
+            reciter: _reciter,
           ),
+          onSettingsChanged: (settings) async {
+            final reciterChanged = settings.reciter != _reciter;
+            final wasPlaying = _audioPlayer.playing;
+            if (reciterChanged) {
+              await _audioPlayer.stop();
+              _clearLoadedAudio();
+              QuranAudioService.reciter = settings.reciter;
+            }
+
+            setState(() {
+              _arabicFontSize = settings.arabicFontSize;
+              _showTranslation = settings.showTranslation;
+              _showTajweed = settings.showTajweed;
+              _reciter = settings.reciter;
+            });
+
+            if (reciterChanged && wasPlaying) {
+              await _playCurrentAyah();
+            }
+          },
+          onBookmarkSelected: (selection) {
+            Navigator.of(context).pop();
+            _selectSurahAndAyah(selection.surahNumber, selection.ayahNumber);
+          },
         );
       },
     );
@@ -311,13 +564,15 @@ class _QuranScreenState extends State<QuranScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return StreamBuilder<Set<int>>(
-      stream: _firestoreService.getBookmarks(),
+      stream: _firestoreService.getBookmarksForSurah(_currentSurahName),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting &&
             !snapshot.hasData) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppTheme.gold),
+          return Center(
+            child: CircularProgressIndicator(color: palette.primary),
           );
         }
 
@@ -332,23 +587,31 @@ class _QuranScreenState extends State<QuranScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _QuranHeader(
+                    surah: _currentSurah,
                     onSurahTap: _showSurahSheet,
-                    onSearch: () {},
-                    onList: () {},
+                    onSearch: _showSearchSheet,
+                    onList: _showMenuSheet,
                   ),
                   const SizedBox(height: 20),
-                  const _SurahHero(),
+                  _SurahHero(surah: _currentSurah),
                   const SizedBox(height: 16),
-                  const _TajweedLegend(),
-                  const SizedBox(height: 18),
-                  const _BismillahOrnament(),
-                  const SizedBox(height: 16),
+                  if (_currentSurahNumber == 1) ...[
+                    const _TajweedLegend(),
+                    const SizedBox(height: 18),
+                  ],
+                  if (_currentSurahNumber != 9) ...[
+                    const _BismillahOrnament(),
+                    const SizedBox(height: 16),
+                  ],
                   for (var index = 0; index < _ayahs.length; index++) ...[
                     _AyahCard(
                       key: _ayahKeys[index],
                       ayah: _ayahs[index],
                       active: _activeAyahIndex == index,
                       bookmarked: bookmarks.contains(_ayahs[index].number),
+                      arabicFontSize: _arabicFontSize,
+                      showTranslation: _showTranslation,
+                      showTajweed: _showTajweed,
                       onTap: () => _selectAyah(index),
                       onBookmark: () {
                         _toggleBookmark(_ayahs[index].number, bookmarks);
@@ -366,20 +629,17 @@ class _QuranScreenState extends State<QuranScreen> {
               child: QuranPlayer(
                 activeAyah: _activeAyahIndex + 1,
                 totalAyahs: _ayahs.length,
-                progress: _currentProgress,
+                position: _position,
+                duration: _duration,
                 isPlaying: _isPlaying,
                 repeat: _repeat,
                 speed: _speeds[_speedIndex],
-                onNext: () => setState(_goNext),
+                onNext: _goNext,
                 onPrev: _goPrev,
-                onPlayPause: () => setState(() => _isPlaying = !_isPlaying),
+                onPlayPause: _togglePlayPause,
                 onRepeat: () => setState(() => _repeat = !_repeat),
-                onSpeed: () {
-                  setState(
-                    () => _speedIndex = (_speedIndex + 1) % _speeds.length,
-                  );
-                },
-                onSeek: (value) => setState(() => _currentProgress = value),
+                onSpeed: _changeSpeed,
+                onSeek: _seekAudio,
               ),
             ),
           ],
@@ -389,36 +649,224 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 }
 
+class _SurahPickerSheet extends StatefulWidget {
+  const _SurahPickerSheet({
+    required this.surahs,
+    required this.currentSurahNumber,
+    required this.onSelected,
+  });
+
+  final List<SurahInfo> surahs;
+  final int currentSurahNumber;
+  final ValueChanged<SurahInfo> onSelected;
+
+  @override
+  State<_SurahPickerSheet> createState() => _SurahPickerSheetState();
+}
+
+class _SurahPickerSheetState extends State<_SurahPickerSheet> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+    final filtered = widget.surahs.where((surah) {
+      final query = _query.trim().toLowerCase();
+      if (query.isEmpty) {
+        return true;
+      }
+
+      return surah.number.toString().contains(query) ||
+          surah.nameArabic.contains(query) ||
+          surah.nameTransliteration.toLowerCase().contains(query) ||
+          surah.nameTranslation.toLowerCase().contains(query);
+    }).toList();
+
+    return SafeArea(
+      top: false,
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.82,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+          child: Column(
+            children: [
+              Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: palette.inkFaint.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Выбор суры',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(Icons.close_rounded, color: palette.inkSoft),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                onChanged: (value) => setState(() => _query = value),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: palette.ink,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Поиск суры',
+                  prefixIcon: Icon(Icons.search_rounded, color: palette.inkSoft),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final surah = filtered[index];
+                    final selected =
+                        surah.number == widget.currentSurahNumber;
+
+                    return AppCard(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      onTap: () => widget.onSelected(surah),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? palette.primary
+                                  : palette.primarySoft,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              '${surah.number}',
+                              style: Theme.of(context).textTheme.labelMedium
+                                  ?.copyWith(
+                                    color: selected
+                                        ? Theme.of(context).colorScheme.onPrimary
+                                        : AppTheme.inkOnLight,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        surah.nameTransliteration,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(fontSize: 14),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Directionality(
+                                      textDirection: TextDirection.rtl,
+                                      child: Text(
+                                        surah.nameArabic,
+                                        style: AppTheme.arabicText(
+                                          fontSize: 20,
+                                          color: palette.ink,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${surah.nameTranslation} · ${surah.versesCount} аятов · ${surah.revelationType}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelMedium
+                                      ?.copyWith(color: palette.inkSoft),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (selected) ...[
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.check_circle_rounded,
+                              color: palette.primaryDeep,
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _QuranHeader extends StatelessWidget {
   const _QuranHeader({
+    required this.surah,
     required this.onSurahTap,
     required this.onSearch,
     required this.onList,
   });
 
+  final SurahInfo surah;
   final VoidCallback onSurahTap;
   final VoidCallback onSearch;
   final VoidCallback onList;
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return Row(
       children: [
         Material(
-          color: AppTheme.surface,
+          color: palette.surface,
           borderRadius: BorderRadius.circular(14),
           child: InkWell(
             onTap: onSurahTap,
             borderRadius: BorderRadius.circular(14),
-            child: Container(
-              height: 44,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              alignment: Alignment.center,
-              child: Text(
-                'Аль-Фатиха ▾',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppTheme.ink,
-                  fontWeight: FontWeight.w900,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 210),
+              child: Container(
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                alignment: Alignment.center,
+                child: Text(
+                  '${surah.nameTransliteration} ▾',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: palette.ink,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ),
@@ -427,12 +875,12 @@ class _QuranHeader extends StatelessWidget {
         const Spacer(),
         IconButton(
           onPressed: onSearch,
-          icon: const Icon(Icons.search_rounded, color: AppTheme.ink),
+          icon: Icon(Icons.search_rounded, color: palette.ink),
         ),
         IconButton(
           onPressed: onList,
           icon: const Icon(Icons.format_list_bulleted_rounded),
-          color: AppTheme.ink,
+          color: palette.ink,
         ),
       ],
     );
@@ -440,23 +888,28 @@ class _QuranHeader extends StatelessWidget {
 }
 
 class _SurahHero extends StatelessWidget {
-  const _SurahHero();
+  const _SurahHero({required this.surah});
+
+  final SurahInfo surah;
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+    final onPrimary = Theme.of(context).colorScheme.onPrimary;
+
     return Container(
       height: 172,
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppTheme.gold, AppTheme.goldDeep],
+          colors: [palette.primary, palette.primaryDeep],
         ),
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.goldDeep.withValues(alpha: 0.22),
+            color: palette.primaryDeep.withValues(alpha: 0.22),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -466,7 +919,9 @@ class _SurahHero extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         child: Stack(
           children: [
-            Positioned.fill(child: CustomPaint(painter: _HeroPatternPainter())),
+            Positioned.fill(
+              child: CustomPaint(painter: _HeroPatternPainter(color: onPrimary)),
+            ),
             Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -477,28 +932,30 @@ class _SurahHero extends StatelessWidget {
                     child: Align(
                       alignment: Alignment.centerRight,
                       child: Text(
-                        'الفاتحة',
+                        surah.nameArabic,
                         style: AppTheme.arabicText(
                           fontSize: 36,
-                          color: AppTheme.surface,
+                          color: onPrimary,
                         ),
                       ),
                     ),
                   ),
                   const Spacer(),
                   Text(
-                    'Аль-Фатиха · Открывающая',
+                    '${surah.nameTransliteration} · ${surah.nameTranslation}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppTheme.surface,
+                      color: onPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '7 АЯТОВ · МЕККАНСКАЯ',
+                    '${surah.versesCount} АЯТОВ · ${surah.revelationType.toUpperCase()}',
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppTheme.surface,
+                      color: onPrimary,
                       fontSize: 11,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 0,
@@ -519,6 +976,7 @@ class _TajweedLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
     const items = [
       _LegendItem('Мадд', AppTheme.tajweedMadd),
       _LegendItem('Калькаля', AppTheme.tajweedQalqala),
@@ -547,7 +1005,7 @@ class _TajweedLegend extends StatelessWidget {
                 Text(
                   items[index].label,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: AppTheme.inkSoft,
+                    color: palette.inkSoft,
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                   ),
@@ -566,17 +1024,19 @@ class _BismillahOrnament extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return Row(
       children: [
-        const Expanded(child: Divider(color: AppTheme.gold)),
+        Expanded(child: Divider(color: palette.primary)),
         const SizedBox(width: 12),
         Text(
           'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
           textAlign: TextAlign.center,
-          style: AppTheme.arabicText(fontSize: 20, color: AppTheme.goldDeep),
+          style: AppTheme.arabicText(fontSize: 20, color: palette.primaryDeep),
         ),
         const SizedBox(width: 12),
-        const Expanded(child: Divider(color: AppTheme.gold)),
+        Expanded(child: Divider(color: palette.primary)),
       ],
     );
   }
@@ -588,6 +1048,9 @@ class _AyahCard extends StatelessWidget {
     required this.ayah,
     required this.active,
     required this.bookmarked,
+    required this.arabicFontSize,
+    required this.showTranslation,
+    required this.showTajweed,
     required this.onTap,
     required this.onBookmark,
   });
@@ -595,17 +1058,25 @@ class _AyahCard extends StatelessWidget {
   final Ayah ayah;
   final bool active;
   final bool bookmarked;
+  final double arabicFontSize;
+  final bool showTranslation;
+  final bool showTajweed;
   final VoidCallback onTap;
   final VoidCallback onBookmark;
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+    final onPrimary = Theme.of(context).colorScheme.onPrimary;
+    final activeForeground = active ? AppTheme.inkOnLight : palette.ink;
+    final activeSoftForeground = active ? AppTheme.inkOnLight : palette.inkSoft;
+
     return AppCard(
       padding: EdgeInsets.zero,
       onTap: onTap,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: active ? AppTheme.goldSoft : AppTheme.surface,
+          color: active ? palette.primarySoft : palette.surface,
           borderRadius: BorderRadius.circular(14),
         ),
         child: IntrinsicHeight(
@@ -617,8 +1088,8 @@ class _AyahCard extends StatelessWidget {
                 width: 3,
                 decoration: BoxDecoration(
                   color: active
-                      ? AppTheme.gold
-                      : AppTheme.surface.withValues(alpha: 0),
+                      ? palette.primary
+                      : palette.surface.withValues(alpha: 0),
                   borderRadius: const BorderRadius.horizontal(
                     left: Radius.circular(14),
                   ),
@@ -636,15 +1107,15 @@ class _AyahCard extends StatelessWidget {
                             width: 24,
                             height: 24,
                             alignment: Alignment.center,
-                            decoration: const BoxDecoration(
-                              color: AppTheme.gold,
+                            decoration: BoxDecoration(
+                              color: palette.primary,
                               shape: BoxShape.circle,
                             ),
                             child: Text(
                               '${ayah.number}',
                               style: Theme.of(context).textTheme.labelMedium
                                   ?.copyWith(
-                                    color: AppTheme.surface,
+                                    color: onPrimary,
                                     fontWeight: FontWeight.w900,
                                   ),
                             ),
@@ -657,22 +1128,30 @@ class _AyahCard extends StatelessWidget {
                                   ? Icons.bookmark_rounded
                                   : Icons.bookmark_border_rounded,
                               color: bookmarked
-                                  ? AppTheme.goldDeep
-                                  : AppTheme.inkFaint,
+                                  ? palette.primaryDeep
+                                  : palette.inkFaint,
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 10),
-                      TajweedText(arabic: ayah.arabic, segments: ayah.tajweed),
-                      const SizedBox(height: 12),
-                      Text(
-                        ayah.translation,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.inkSoft,
-                          fontSize: 13,
-                        ),
+                      TajweedText(
+                        arabic: ayah.arabic,
+                        segments: showTajweed ? ayah.tajweed : const [],
+                        defaultColor: activeForeground,
+                        fontSize: arabicFontSize,
                       ),
+                      if (showTranslation && ayah.translation.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          ayah.translation,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: activeSoftForeground,
+                                fontSize: 13,
+                              ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -686,10 +1165,14 @@ class _AyahCard extends StatelessWidget {
 }
 
 class _HeroPatternPainter extends CustomPainter {
+  const _HeroPatternPainter({required this.color});
+
+  final Color color;
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppTheme.surface.withValues(alpha: 0.08)
+      ..color = color.withValues(alpha: 0.08)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.1;
 
@@ -709,7 +1192,9 @@ class _HeroPatternPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _HeroPatternPainter oldDelegate) {
+    return oldDelegate.color != color;
+  }
 }
 
 class _LegendItem {

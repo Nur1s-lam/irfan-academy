@@ -16,6 +16,8 @@ class ScreenTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -30,7 +32,7 @@ class ScreenTitle extends StatelessWidget {
                   subtitle!,
                   style: Theme.of(
                     context,
-                  ).textTheme.bodyMedium?.copyWith(color: AppTheme.inkSoft),
+                  ).textTheme.bodyMedium?.copyWith(color: palette.inkSoft),
                 ),
               ],
             ],

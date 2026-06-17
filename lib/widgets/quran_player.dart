@@ -7,7 +7,8 @@ class QuranPlayer extends StatelessWidget {
     super.key,
     required this.activeAyah,
     required this.totalAyahs,
-    required this.progress,
+    required this.position,
+    required this.duration,
     required this.isPlaying,
     required this.repeat,
     required this.speed,
@@ -21,7 +22,8 @@ class QuranPlayer extends StatelessWidget {
 
   final int activeAyah;
   final int totalAyahs;
-  final double progress;
+  final Duration position;
+  final Duration duration;
   final bool isPlaying;
   final bool repeat;
   final double speed;
@@ -32,21 +34,19 @@ class QuranPlayer extends StatelessWidget {
   final VoidCallback onSpeed;
   final ValueChanged<double> onSeek;
 
-  static const int _totalSeconds = 45;
-
   @override
   Widget build(BuildContext context) {
-    final currentSeconds = (_totalSeconds * progress).round().clamp(
-      0,
-      _totalSeconds,
-    );
+    final palette = AppTheme.palette(context);
+    final totalMs = duration.inMilliseconds;
+    final currentMs = position.inMilliseconds.clamp(0, totalMs);
+    final progress = totalMs == 0 ? 0.0 : currentMs / totalMs;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppTheme.surface,
+        color: palette.surface,
         boxShadow: [
           BoxShadow(
-            color: AppTheme.ink.withValues(alpha: 0.08),
+            color: palette.ink.withValues(alpha: 0.08),
             blurRadius: 24,
             offset: const Offset(0, -10),
           ),
@@ -61,10 +61,10 @@ class QuranPlayer extends StatelessWidget {
             children: [
               SliderTheme(
                 data: SliderTheme.of(context).copyWith(
-                  activeTrackColor: AppTheme.gold,
-                  inactiveTrackColor: AppTheme.goldSoft,
-                  thumbColor: AppTheme.goldDeep,
-                  overlayColor: AppTheme.gold.withValues(alpha: 0.12),
+                  activeTrackColor: palette.primary,
+                  inactiveTrackColor: palette.primarySoft,
+                  thumbColor: palette.primaryDeep,
+                  overlayColor: palette.primary.withValues(alpha: 0.12),
                   trackHeight: 4,
                 ),
                 child: Slider(
@@ -83,15 +83,15 @@ class QuranPlayer extends StatelessWidget {
                         'Аят $activeAyah из $totalAyahs',
                         style: Theme.of(context).textTheme.labelMedium
                             ?.copyWith(
-                              color: AppTheme.inkSoft,
+                              color: palette.inkSoft,
                               fontWeight: FontWeight.w800,
                             ),
                       ),
                     ),
                     Text(
-                      '${_format(currentSeconds)} / 00:45',
+                      '${_format(position)} / ${_format(duration)}',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: AppTheme.inkSoft,
+                        color: palette.inkSoft,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -132,9 +132,10 @@ class QuranPlayer extends StatelessWidget {
     );
   }
 
-  String _format(int seconds) {
-    final minutes = (seconds ~/ 60).toString().padLeft(2, '0');
-    final rest = (seconds % 60).toString().padLeft(2, '0');
+  String _format(Duration duration) {
+    final totalSeconds = duration.inSeconds;
+    final minutes = (totalSeconds ~/ 60).toString().padLeft(2, '0');
+    final rest = (totalSeconds % 60).toString().padLeft(2, '0');
     return '$minutes:$rest';
   }
 }
@@ -154,10 +155,12 @@ class _RoundIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return Tooltip(
       message: label,
       child: Material(
-        color: active ? AppTheme.goldSoft : AppTheme.surface,
+        color: active ? palette.primarySoft : palette.surface,
         shape: const CircleBorder(),
         child: InkWell(
           customBorder: const CircleBorder(),
@@ -167,7 +170,7 @@ class _RoundIconButton extends StatelessWidget {
             height: 44,
             child: Icon(
               icon,
-              color: active ? AppTheme.goldDeep : AppTheme.inkSoft,
+              color: active ? AppTheme.inkOnLight : palette.inkSoft,
               size: 23,
             ),
           ),
@@ -185,10 +188,13 @@ class _PlayButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+    final onPrimary = Theme.of(context).colorScheme.onPrimary;
+
     return Tooltip(
       message: isPlaying ? 'Пауза' : 'Плей',
       child: Material(
-        color: AppTheme.gold,
+        color: palette.primary,
         shape: const CircleBorder(),
         child: InkWell(
           customBorder: const CircleBorder(),
@@ -198,7 +204,7 @@ class _PlayButton extends StatelessWidget {
             height: 52,
             child: Icon(
               isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-              color: AppTheme.surface,
+              color: onPrimary,
               size: 30,
             ),
           ),

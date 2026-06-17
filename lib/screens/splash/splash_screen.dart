@@ -24,10 +24,12 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return Scaffold(
       body: Stack(
         children: [
-          const Positioned.fill(child: _GeometricPattern()),
+          Positioned.fill(child: _GeometricPattern(palette: palette)),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
@@ -42,7 +44,7 @@ class SplashScreen extends StatelessWidget {
                         textAlign: TextAlign.right,
                         style: AppTheme.arabicText(
                           fontSize: 30,
-                          color: AppTheme.goldDeep,
+                          color: palette.primaryDeep,
                         ),
                       ),
                     ),
@@ -61,7 +63,7 @@ class SplashScreen extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: Theme.of(
                       context,
-                    ).textTheme.bodyLarge?.copyWith(color: AppTheme.inkSoft),
+                    ).textTheme.bodyLarge?.copyWith(color: palette.inkSoft),
                   ),
                   const Spacer(flex: 3),
                   GoldButton(
@@ -79,7 +81,7 @@ class SplashScreen extends StatelessWidget {
                     'Бишкек · Кыргызстан',
                     style: Theme.of(
                       context,
-                    ).textTheme.labelMedium?.copyWith(color: AppTheme.inkFaint),
+                    ).textTheme.labelMedium?.copyWith(color: palette.inkFaint),
                   ),
                 ],
               ),
@@ -96,19 +98,22 @@ class _LogoMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final palette = AppTheme.palette(context);
+
     return Container(
       width: 104,
       height: 104,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppTheme.gold, AppTheme.goldDeep],
+          colors: [palette.primary, palette.primaryDeep],
         ),
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.goldDeep.withValues(alpha: 0.24),
+            color: palette.primaryDeep.withValues(alpha: 0.24),
             blurRadius: 26,
             offset: const Offset(0, 14),
           ),
@@ -120,14 +125,14 @@ class _LogoMark extends StatelessWidget {
           height: 64,
           decoration: BoxDecoration(
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.78),
+              color: colorScheme.onPrimary.withValues(alpha: 0.78),
               width: 2,
             ),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.auto_stories_rounded,
-            color: Colors.white,
+            color: colorScheme.onPrimary,
             size: 34,
           ),
         ),
@@ -137,25 +142,31 @@ class _LogoMark extends StatelessWidget {
 }
 
 class _GeometricPattern extends StatelessWidget {
-  const _GeometricPattern();
+  const _GeometricPattern({required this.palette});
+
+  final AppPalette palette;
 
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: _PatternPainter(),
+      painter: _PatternPainter(palette: palette),
       child: const SizedBox.expand(),
     );
   }
 }
 
 class _PatternPainter extends CustomPainter {
+  const _PatternPainter({required this.palette});
+
+  final AppPalette palette;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final bgPaint = Paint()..color = AppTheme.bg;
+    final bgPaint = Paint()..color = palette.background;
     canvas.drawRect(Offset.zero & size, bgPaint);
 
     final linePaint = Paint()
-      ..color = AppTheme.goldDeep.withValues(alpha: 0.055)
+      ..color = palette.primaryDeep.withValues(alpha: 0.055)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
@@ -178,8 +189,8 @@ class _PatternPainter extends CustomPainter {
       ..shader =
           RadialGradient(
             colors: [
-              AppTheme.goldSoft.withValues(alpha: 0.9),
-              AppTheme.goldSoft.withValues(alpha: 0),
+              palette.primarySoft.withValues(alpha: 0.9),
+              palette.primarySoft.withValues(alpha: 0),
             ],
           ).createShader(
             Rect.fromCircle(
@@ -195,5 +206,7 @@ class _PatternPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _PatternPainter oldDelegate) {
+    return oldDelegate.palette != palette;
+  }
 }

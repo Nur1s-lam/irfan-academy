@@ -94,14 +94,16 @@ class _LessonsSegmentedControl extends StatelessWidget {
   Widget build(BuildContext context) {
     const tabs = ['Расписание', 'Задания', 'Видео'];
 
+    final palette = AppTheme.palette(context);
+
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppTheme.surface,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.ink.withValues(alpha: 0.05),
+            color: palette.ink.withValues(alpha: 0.05),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -136,8 +138,11 @@ class _SegmentButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+    final onPrimary = Theme.of(context).colorScheme.onPrimary;
+
     return Material(
-      color: AppTheme.surface.withValues(alpha: 0),
+      color: palette.surface.withValues(alpha: 0),
       borderRadius: BorderRadius.circular(11),
       child: InkWell(
         onTap: onTap,
@@ -148,9 +153,7 @@ class _SegmentButton extends StatelessWidget {
           height: 42,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected
-                ? AppTheme.gold
-                : AppTheme.surface.withValues(alpha: 0),
+            color: selected ? palette.primary : palette.surface.withValues(alpha: 0),
             borderRadius: BorderRadius.circular(11),
           ),
           child: Text(
@@ -158,7 +161,7 @@ class _SegmentButton extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: selected ? AppTheme.surface : AppTheme.inkSoft,
+              color: selected ? onPrimary : palette.inkSoft,
               fontWeight: FontWeight.w900,
             ),
           ),

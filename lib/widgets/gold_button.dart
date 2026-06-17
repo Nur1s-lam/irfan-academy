@@ -18,6 +18,8 @@ class GoldButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final palette = AppTheme.palette(context);
     final enabled = onPressed != null;
 
     return AnimatedOpacity(
@@ -26,15 +28,15 @@ class GoldButton extends StatelessWidget {
       opacity: enabled ? 1 : 0.58,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppTheme.gold, AppTheme.goldDeep],
+            colors: [palette.primary, palette.primaryDeep],
           ),
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.goldDeep.withValues(alpha: 0.24),
+              color: palette.primaryDeep.withValues(alpha: 0.24),
               blurRadius: 18,
               offset: const Offset(0, 10),
             ),
@@ -46,7 +48,7 @@ class GoldButton extends StatelessWidget {
           child: ElevatedButton(
             onPressed: onPressed,
             style: ElevatedButton.styleFrom(
-              foregroundColor: Colors.white,
+              foregroundColor: colorScheme.onPrimary,
               backgroundColor: Colors.transparent,
               disabledBackgroundColor: Colors.transparent,
               shadowColor: Colors.transparent,

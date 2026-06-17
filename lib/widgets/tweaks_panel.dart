@@ -12,17 +12,14 @@ class TweaksPanel extends StatefulWidget {
 }
 
 class _TweaksPanelState extends State<TweaksPanel> {
-  bool _open = false;
   double _right = 16;
   double _bottom = 96;
 
   static const double _buttonSize = 48;
-  static const double _panelWidth = 280;
 
   void _drag(DragUpdateDetails details, Size screenSize) {
-    final width = _open ? _panelWidth : _buttonSize;
     const minEdge = 8.0;
-    final maxRight = screenSize.width - width - minEdge;
+    final maxRight = screenSize.width - _buttonSize - minEdge;
     final maxBottom = screenSize.height - _buttonSize - minEdge;
 
     setState(() {
@@ -40,13 +37,60 @@ class _TweaksPanelState extends State<TweaksPanel> {
       bottom: _bottom,
       child: GestureDetector(
         onPanUpdate: (details) => _drag(details, screenSize),
-        child: AnimatedSwitcher(
-          duration: AppTheme.motion,
-          switchInCurve: AppTheme.motionCurve,
-          switchOutCurve: AppTheme.motionCurve,
-          child: _open
-              ? _PanelCard(onClose: () => setState(() => _open = false))
-              : _OpenButton(onTap: () => setState(() => _open = true)),
+        child: _OpenButton(onTap: () => _showTweaksSheet(context)),
+      ),
+    );
+  }
+
+  void _showTweaksSheet(BuildContext context) {
+    final palette = AppTheme.palette(context);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: palette.ink.withValues(alpha: 0.42),
+      builder: (context) {
+        return _TweaksSheet(
+          onClose: () => Navigator.of(context).pop(),
+        );
+      },
+    );
+  }
+}
+
+class _TweaksSheet extends StatelessWidget {
+  const _TweaksSheet({required this.onClose});
+
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: palette.background,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: palette.inkFaint.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              const SizedBox(height: 14),
+              _PanelCard(onClose: onClose),
+            ],
+          ),
         ),
       ),
     );
@@ -60,19 +104,24 @@ class _OpenButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return Material(
       key: const ValueKey('tweaks-open'),
-      color: AppTheme.gold,
+      color: palette.primary,
       shape: const CircleBorder(),
       elevation: 10,
-      shadowColor: AppTheme.goldDeep.withValues(alpha: 0.25),
+      shadowColor: palette.primaryDeep.withValues(alpha: 0.25),
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),
-        child: const SizedBox(
+        child: SizedBox(
           width: 48,
           height: 48,
-          child: Icon(Icons.settings_rounded, color: AppTheme.surface),
+          child: Icon(
+            Icons.settings_rounded,
+            color: Theme.of(context).colorScheme.onPrimary,
+          ),
         ),
       ),
     );
@@ -89,15 +138,18 @@ class _PanelCard extends StatelessWidget {
     return Consumer<ThemeProvider>(
       key: const ValueKey('tweaks-panel'),
       builder: (context, themeProvider, _) {
+        final palette = AppTheme.palette(context);
+
         return Container(
-          width: 280,
+          width: double.infinity,
+          constraints: const BoxConstraints(maxWidth: 520),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: AppTheme.surface,
+            color: palette.surface,
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.ink.withValues(alpha: 0.14),
+                color: palette.ink.withValues(alpha: 0.14),
                 blurRadius: 28,
                 offset: const Offset(0, 14),
               ),
@@ -121,7 +173,7 @@ class _PanelCard extends StatelessWidget {
                   IconButton(
                     onPressed: onClose,
                     icon: const Icon(Icons.close_rounded),
-                    color: AppTheme.inkSoft,
+                    color: palette.inkSoft,
                   ),
                 ],
               ),
@@ -143,7 +195,7 @@ class _PanelCard extends StatelessWidget {
                   Text(
                     '${(themeProvider.goldIntensity * 100).round()}%',
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppTheme.goldDeep,
+                      color: palette.primaryDeep,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -151,10 +203,10 @@ class _PanelCard extends StatelessWidget {
               ),
               SliderTheme(
                 data: SliderTheme.of(context).copyWith(
-                  activeTrackColor: AppTheme.gold,
-                  inactiveTrackColor: AppTheme.goldSoft,
-                  thumbColor: AppTheme.goldDeep,
-                  overlayColor: AppTheme.gold.withValues(alpha: 0.12),
+                  activeTrackColor: palette.primary,
+                  inactiveTrackColor: palette.primarySoft,
+                  thumbColor: palette.primaryDeep,
+                  overlayColor: palette.primary.withValues(alpha: 0.12),
                 ),
                 child: Slider(
                   value: themeProvider.goldIntensity,
@@ -200,10 +252,12 @@ class _FieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return Text(
       label,
       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-        color: AppTheme.inkSoft,
+        color: palette.inkSoft,
         fontWeight: FontWeight.w900,
       ),
     );
@@ -223,12 +277,15 @@ class _Dropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasValue = items.containsKey(value);
+    final palette = AppTheme.palette(context);
+
     return DropdownButton<String>(
-      value: value,
+      value: hasValue ? value : items.keys.first,
       isExpanded: true,
-      iconEnabledColor: AppTheme.goldDeep,
-      dropdownColor: AppTheme.surface,
-      underline: Container(height: 1, color: AppTheme.border),
+      iconEnabledColor: palette.primaryDeep,
+      dropdownColor: palette.surface,
+      underline: Container(height: 1, color: palette.border),
       items: [
         for (final item in items.entries)
           DropdownMenuItem(value: item.key, child: Text(item.value)),
@@ -255,23 +312,25 @@ class _SwitchRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return Row(
       children: [
         Expanded(
           child: Text(
             label,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: AppTheme.inkSoft,
+              color: palette.inkSoft,
               fontWeight: FontWeight.w800,
             ),
           ),
         ),
         Switch(
           value: value,
-          activeThumbColor: AppTheme.gold,
-          activeTrackColor: AppTheme.goldSoft,
-          inactiveThumbColor: AppTheme.inkFaint,
-          inactiveTrackColor: AppTheme.border,
+          activeThumbColor: palette.primary,
+          activeTrackColor: palette.primarySoft,
+          inactiveThumbColor: palette.inkFaint,
+          inactiveTrackColor: palette.border,
           onChanged: onChanged,
         ),
       ],

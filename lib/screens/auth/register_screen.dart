@@ -81,8 +81,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppTheme.palette(context);
+
     return Scaffold(
-      backgroundColor: AppTheme.bg,
+      backgroundColor: palette.background,
       body: SafeArea(
         child: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -104,7 +106,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   textAlign: TextAlign.center,
                   style: Theme.of(
                     context,
-                  ).textTheme.bodyLarge?.copyWith(color: AppTheme.inkSoft),
+                  ).textTheme.bodyLarge?.copyWith(color: palette.inkSoft),
                 ),
                 const SizedBox(height: 34),
                 TextFormField(
@@ -112,6 +114,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   textInputAction: TextInputAction.next,
                   textCapitalization: TextCapitalization.words,
                   decoration: authInputDecoration(
+                    context: context,
                     label: 'Имя',
                     icon: Icons.person_outline_rounded,
                   ),
@@ -128,6 +131,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   decoration: authInputDecoration(
+                    context: context,
                     label: 'Email',
                     icon: Icons.email_outlined,
                   ),
@@ -149,6 +153,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   textInputAction: TextInputAction.next,
                   decoration:
                       authInputDecoration(
+                        context: context,
                         label: 'Пароль',
                         icon: Icons.lock_outline_rounded,
                       ).copyWith(
@@ -162,7 +167,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             _obscurePassword
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
-                            color: AppTheme.inkFaint,
+                            color: palette.inkFaint,
                           ),
                         ),
                       ),
@@ -185,6 +190,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   onFieldSubmitted: (_) => _isLoading ? null : _register(),
                   decoration:
                       authInputDecoration(
+                        context: context,
                         label: 'Подтвердите пароль',
                         icon: Icons.lock_outline_rounded,
                       ).copyWith(
@@ -199,7 +205,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             _obscureConfirmPassword
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
-                            color: AppTheme.inkFaint,
+                            color: palette.inkFaint,
                           ),
                         ),
                       ),
