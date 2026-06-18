@@ -4,9 +4,14 @@ import 'package:geolocator/geolocator.dart';
 import '../models/prayer_time.dart';
 
 class PrayerService {
+  static const _bishkekLatitude = 42.8746;
+  static const _bishkekLongitude = 74.5698;
+  static const _bishkekLabel = 'Бишкек';
+  static const _locationTimeout = Duration(seconds: 5);
+
   Future<PrayerSchedule> getTodayPrayerSchedule() async {
-    final position = await _currentPosition();
-    final coordinates = Coordinates(position.latitude, position.longitude);
+    final location = await _currentLocationOrBishkek();
+    final coordinates = Coordinates(location.latitude, location.longitude);
     final params = CalculationMethod.muslim_world_league.getParameters()
       ..madhab = Madhab.hanafi;
     final prayerTimes = PrayerTimes(
@@ -17,9 +22,9 @@ class PrayerService {
     final qibla = Qibla(coordinates);
 
     return PrayerSchedule(
-      latitude: position.latitude,
-      longitude: position.longitude,
-      locationLabel: _formatLocation(position),
+      latitude: location.latitude,
+      longitude: location.longitude,
+      locationLabel: location.label,
       qiblaDirection: qibla.direction,
       prayers: _withStatuses([
         _prayer('Фаджр', 'الفجر', prayerTimes.fajr),
@@ -36,29 +41,74 @@ class PrayerService {
     return _withStatuses(prayers);
   }
 
-  Future<Position> _currentPosition() async {
-    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  PrayerTime getNextPrayer(List<PrayerTime> allPrayers) {
+    final now = DateTime.now();
+    for (final prayer in allPrayers) {
+      final prayerTime = _parseTimeToday(prayer.time);
+      if (!prayer.isFaint && prayerTime.isAfter(now)) {
+        return prayer;
+      }
+    }
+    return allPrayers.firstWhere(
+      (prayer) => !prayer.isFaint,
+      orElse: () => allPrayers.first,
+    );
+  }
+
+  Duration getTimeUntilNextPrayer(PrayerTime nextPrayer) {
+    final now = DateTime.now();
+    var prayerDateTime = _parseTimeToday(nextPrayer.time);
+    if (!prayerDateTime.isAfter(now)) {
+      prayerDateTime = prayerDateTime.add(const Duration(days: 1));
+    }
+    return prayerDateTime.difference(now);
+  }
+
+  Future<_PrayerLocation> _currentLocationOrBishkek() async {
+    try {
+      return await _currentLocation().timeout(_locationTimeout);
+    } catch (_) {
+      return const _PrayerLocation(
+        latitude: _bishkekLatitude,
+        longitude: _bishkekLongitude,
+        label: _bishkekLabel,
+      );
+    }
+  }
+
+  Future<_PrayerLocation> _currentLocation() async {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled().timeout(
+      _locationTimeout,
+    );
     if (!serviceEnabled) {
-      throw PrayerLocationException('Включите геолокацию на устройстве');
+      throw const PrayerLocationException('Геолокация выключена');
     }
 
-    var permission = await Geolocator.checkPermission();
+    var permission = await Geolocator.checkPermission().timeout(
+      _locationTimeout,
+    );
     if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-
-    if (permission == LocationPermission.denied) {
-      throw PrayerLocationException('Разрешите доступ к местоположению');
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      throw PrayerLocationException(
-        'Геолокация запрещена. Откройте настройки приложения',
+      permission = await Geolocator.requestPermission().timeout(
+        _locationTimeout,
       );
     }
 
-    return Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      throw const PrayerLocationException('Нет доступа к геолокации');
+    }
+
+    final position = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        timeLimit: _locationTimeout,
+      ),
+    ).timeout(_locationTimeout);
+
+    return _PrayerLocation(
+      latitude: position.latitude,
+      longitude: position.longitude,
+      label: _formatLocation(position),
     );
   }
 
@@ -117,11 +167,31 @@ class PrayerService {
     return '$hour:$minute';
   }
 
+  DateTime _parseTimeToday(String time) {
+    final now = DateTime.now();
+    final parts = time.split(':');
+    final hour = int.parse(parts[0]);
+    final minute = int.parse(parts[1]);
+    return DateTime(now.year, now.month, now.day, hour, minute);
+  }
+
   String _formatLocation(Position position) {
     final lat = position.latitude.toStringAsFixed(3);
     final lon = position.longitude.toStringAsFixed(3);
     return '$lat, $lon';
   }
+}
+
+class _PrayerLocation {
+  const _PrayerLocation({
+    required this.latitude,
+    required this.longitude,
+    required this.label,
+  });
+
+  final double latitude;
+  final double longitude;
+  final String label;
 }
 
 class PrayerSchedule {
@@ -151,7 +221,7 @@ class PrayerSchedule {
 }
 
 class PrayerLocationException implements Exception {
-  PrayerLocationException(this.message);
+  const PrayerLocationException(this.message);
 
   final String message;
 

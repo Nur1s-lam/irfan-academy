@@ -5,8 +5,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/lesson.dart';
+import '../../models/prayer_time.dart';
 import '../../models/user_profile.dart';
 import '../../services/firestore_service.dart';
+import '../../services/prayer_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/gold_button.dart';
@@ -23,33 +25,72 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late Timer _timer;
-  late Duration _timeToPrayer;
+  final _prayerService = PrayerService();
+  Timer? _timer;
+  PrayerSchedule? _prayerSchedule;
+  PrayerTime? _nextPrayer;
+  Duration? _timeToPrayer;
+  String? _prayerError;
+  bool _isPrayerLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _timeToPrayer = _calculateTimeToPrayer();
+    _loadPrayerSchedule();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_prayerSchedule == null || !mounted) {
+        return;
+      }
       setState(() {
-        _timeToPrayer = _calculateTimeToPrayer();
+        _refreshNextPrayer();
       });
     });
   }
 
   @override
   void dispose() {
-    _timer.cancel();
+    _timer?.cancel();
     super.dispose();
   }
 
-  Duration _calculateTimeToPrayer() {
-    final now = DateTime.now();
-    var target = DateTime(now.year, now.month, now.day, 17, 2);
-    if (!target.isAfter(now)) {
-      target = target.add(const Duration(days: 1));
+  Future<void> _loadPrayerSchedule() async {
+    setState(() {
+      _isPrayerLoading = true;
+      _prayerError = null;
+    });
+
+    try {
+      final schedule = await _prayerService.getTodayPrayerSchedule();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _prayerSchedule = schedule;
+        _isPrayerLoading = false;
+        _refreshNextPrayer();
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isPrayerLoading = false;
+        _prayerError = error.toString();
+      });
     }
-    return target.difference(now);
+  }
+
+  void _refreshNextPrayer() {
+    final schedule = _prayerSchedule;
+    if (schedule == null) {
+      return;
+    }
+
+    final prayers = _prayerService.updateStatuses(schedule.prayers);
+    final nextPrayer = _prayerService.getNextPrayer(prayers);
+    _prayerSchedule = schedule.copyWith(prayers: prayers);
+    _nextPrayer = nextPrayer;
+    _timeToPrayer = _prayerService.getTimeUntilNextPrayer(nextPrayer);
   }
 
   String _formatDuration(Duration duration) {
@@ -82,8 +123,13 @@ class _HomeScreenState extends State<HomeScreen> {
               _HomeHeader(profile: profile),
               const SizedBox(height: 20),
               _NextPrayerCard(
-                countdown: _formatDuration(_timeToPrayer),
+                nextPrayer: _nextPrayer,
+                countdown: _formatDuration(_timeToPrayer ?? Duration.zero),
+                locationLabel: _prayerSchedule?.locationLabel ?? 'Бишкек',
+                isLoading: _isPrayerLoading,
+                error: _prayerError,
                 onTap: () => widget.onTabSelected(1),
+                onRetry: _loadPrayerSchedule,
               ),
               const SizedBox(height: 20),
               _QuickAccess(onTabSelected: widget.onTabSelected),
@@ -268,15 +314,16 @@ class _NotificationsSheet extends StatelessWidget {
                       ),
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: palette.inkSoft,
-                        ),
+                        icon: Icon(Icons.close_rounded, color: palette.inkSoft),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  for (var index = 0; index < notifications.length; index++) ...[
+                  for (
+                    var index = 0;
+                    index < notifications.length;
+                    index++
+                  ) ...[
                     if (index > 0)
                       Divider(
                         height: 18,
@@ -382,15 +429,29 @@ class _NotificationTile extends StatelessWidget {
 }
 
 class _NextPrayerCard extends StatelessWidget {
-  const _NextPrayerCard({required this.countdown, required this.onTap});
+  const _NextPrayerCard({
+    required this.nextPrayer,
+    required this.countdown,
+    required this.locationLabel,
+    required this.isLoading,
+    required this.error,
+    required this.onTap,
+    required this.onRetry,
+  });
 
+  final PrayerTime? nextPrayer;
   final String countdown;
+  final String locationLabel;
+  final bool isLoading;
+  final String? error;
   final VoidCallback onTap;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     final palette = AppTheme.palette(context);
     final onPrimary = Theme.of(context).colorScheme.onPrimary;
+    final prayer = nextPrayer;
 
     return Material(
       color: palette.surface.withValues(alpha: 0),
@@ -448,15 +509,19 @@ class _NextPrayerCard extends StatelessWidget {
                                       color: onPrimary,
                                     ),
                                     const SizedBox(width: 4),
-                                    Text(
-                                      'Бишкек',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelMedium
-                                          ?.copyWith(
-                                            color: onPrimary,
-                                            fontWeight: FontWeight.w800,
-                                          ),
+                                    Expanded(
+                                      child: Text(
+                                        locationLabel,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelMedium
+                                            ?.copyWith(
+                                              color: onPrimary,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -466,7 +531,7 @@ class _NextPrayerCard extends StatelessWidget {
                           Directionality(
                             textDirection: TextDirection.rtl,
                             child: Text(
-                              'العصر',
+                              prayer?.nameAr ?? '...',
                               style: AppTheme.arabicText(
                                 fontSize: 34,
                                 color: onPrimary,
@@ -476,52 +541,66 @@ class _NextPrayerCard extends StatelessWidget {
                         ],
                       ),
                       const Spacer(),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                      if (isLoading)
+                        Align(
+                          alignment: Alignment.bottomLeft,
+                          child: CircularProgressIndicator(color: onPrimary),
+                        )
+                      else if (error != null)
+                        _PrayerCardError(
+                          message: error!,
+                          onRetry: onRetry,
+                          foreground: onPrimary,
+                        )
+                      else
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    prayer?.nameRu ?? '--',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(color: onPrimary),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    prayer?.time ?? '--:--',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineLarge
+                                        ?.copyWith(color: onPrimary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
-                                  'Аср',
-                                  style: Theme.of(context).textTheme.titleLarge
+                                  'осталось',
+                                  style: Theme.of(context).textTheme.labelMedium
                                       ?.copyWith(color: onPrimary),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 6),
                                 Text(
-                                  '17:02',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineLarge
-                                      ?.copyWith(color: onPrimary),
+                                  countdown,
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(
+                                        color: onPrimary,
+                                        fontFeatures: const [
+                                          FontFeature.tabularFigures(),
+                                        ],
+                                      ),
                                 ),
                               ],
                             ),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                'осталось',
-                                style: Theme.of(context).textTheme.labelMedium
-                                    ?.copyWith(color: onPrimary),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                countdown,
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(
-                                      color: onPrimary,
-                                      fontFeatures: const [
-                                        FontFeature.tabularFigures(),
-                                      ],
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
                     ],
                   ),
                 ),
@@ -530,6 +609,43 @@ class _NextPrayerCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PrayerCardError extends StatelessWidget {
+  const _PrayerCardError({
+    required this.message,
+    required this.onRetry,
+    required this.foreground,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            message,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: foreground,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        TextButton(
+          onPressed: onRetry,
+          style: TextButton.styleFrom(foregroundColor: foreground),
+          child: const Text('Повторить'),
+        ),
+      ],
     );
   }
 }
@@ -894,11 +1010,7 @@ class _VideoLessonCard extends StatelessWidget {
             const SizedBox(height: 10),
             Row(
               children: [
-                Icon(
-                  Icons.timer_outlined,
-                  size: 16,
-                  color: palette.inkFaint,
-                ),
+                Icon(Icons.timer_outlined, size: 16, color: palette.inkFaint),
                 const SizedBox(width: 5),
                 Text(
                   video.duration,
