@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../models/lesson.dart';
 import '../../models/prayer_time.dart';
 import '../../models/user_profile.dart';
+import '../../models/video_lesson.dart';
 import '../../services/firestore_service.dart';
 import '../../services/prayer_service.dart';
 import '../../theme/app_theme.dart';
@@ -14,6 +15,7 @@ import '../../widgets/app_card.dart';
 import '../../widgets/gold_button.dart';
 import '../../widgets/screen_title.dart';
 import '../../widgets/tag_widget.dart';
+import '../../widgets/video_player_modal.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.onTabSelected});
@@ -87,7 +89,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final prayers = _prayerService.updateStatuses(schedule.prayers);
-    final nextPrayer = _prayerService.getNextPrayer(prayers);
+    final nextPrayer = _prayerService.getNextPrayerForSchedule(
+      schedule.copyWith(prayers: prayers),
+    );
     _prayerSchedule = schedule.copyWith(prayers: prayers);
     _nextPrayer = nextPrayer;
     _timeToPrayer = _prayerService.getTimeUntilNextPrayer(nextPrayer);
@@ -102,8 +106,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final user = FirebaseAuth.instance.currentUser;
     final palette = AppTheme.palette(context);
+    if (user == null) {
+      return const Center(child: Text('Войдите в аккаунт'));
+    }
+    final uid = user.uid;
 
     return StreamBuilder<UserProfile?>(
       stream: FirestoreService(uid).getUserProfile(),
@@ -144,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onAllLessons: () => widget.onTabSelected(2),
               ),
               const SizedBox(height: 20),
-              const _RecommendedSection(),
+              _RecommendedSection(uid: uid),
             ],
           ),
         );
@@ -196,49 +204,39 @@ class _HomeHeader extends StatelessWidget {
             ],
           ),
         ),
-        SizedBox(
-          width: 44,
-          height: 44,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Positioned.fill(
-                child: IconButton(
-                  onPressed: () => _showNotificationsSheet(context),
-                  icon: Icon(
-                    Icons.notifications_none_rounded,
-                    color: palette.ink,
-                  ),
+        StreamBuilder<List<AcademyNotification>>(
+          stream: FirestoreService(profile.uid).getNotifications(),
+          builder: (context, snapshot) {
+            final hasUnread =
+                snapshot.data?.any((item) => !item.isRead) ?? false;
+            return Badge(
+              isLabelVisible: hasUnread,
+              smallSize: 9,
+              backgroundColor: palette.primary,
+              child: IconButton(
+                onPressed: () => _showNotificationsSheet(context),
+                icon: Icon(
+                  Icons.notifications_none_rounded,
+                  color: palette.ink,
                 ),
               ),
-              Positioned(
-                top: 9,
-                right: 9,
-                child: Container(
-                  width: 9,
-                  height: 9,
-                  decoration: BoxDecoration(
-                    color: palette.primary,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ],
     );
   }
 
-  void _showNotificationsSheet(BuildContext context) {
+  Future<void> _showNotificationsSheet(BuildContext context) async {
     final palette = AppTheme.palette(context);
-    showModalBottomSheet<void>(
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       barrierColor: palette.ink.withValues(alpha: 0.42),
-      builder: (context) => const _NotificationsSheet(),
+      builder: (context) => _NotificationsSheet(uid: profile.uid),
     );
+    await FirestoreService(profile.uid).markNotificationsRead();
   }
 
   String _initials(String name) {
@@ -251,32 +249,14 @@ class _HomeHeader extends StatelessWidget {
 }
 
 class _NotificationsSheet extends StatelessWidget {
-  const _NotificationsSheet();
+  const _NotificationsSheet({required this.uid});
+
+  final String uid;
 
   @override
   Widget build(BuildContext context) {
     final palette = AppTheme.palette(context);
-    final notifications = [
-      _NotificationItem(
-        icon: Icons.schedule_rounded,
-        title: 'Напоминание о намазе',
-        message: 'Аср начнётся сегодня в 17:18.',
-        time: 'Сегодня',
-        highlighted: true,
-      ),
-      _NotificationItem(
-        icon: Icons.school_rounded,
-        title: 'Урок таджвида',
-        message: 'Повторите правила Нун сакина и танвин перед занятием.',
-        time: '2 часа назад',
-      ),
-      _NotificationItem(
-        icon: Icons.menu_book_rounded,
-        title: 'Продолжите чтение',
-        message: 'Вы остановились на текущем аяте в разделе Коран.',
-        time: 'Вчера',
-      ),
-    ];
+    final service = FirestoreService(uid);
 
     return Container(
       decoration: BoxDecoration(
@@ -319,18 +299,52 @@ class _NotificationsSheet extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  for (
-                    var index = 0;
-                    index < notifications.length;
-                    index++
-                  ) ...[
-                    if (index > 0)
-                      Divider(
-                        height: 18,
-                        color: palette.inkFaint.withValues(alpha: 0.16),
-                      ),
-                    _NotificationTile(item: notifications[index]),
-                  ],
+                  StreamBuilder<List<AcademyNotification>>(
+                    stream: service.getNotifications(),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return Text('Не удалось загрузить уведомления');
+                      }
+                      if (!snapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final notifications = snapshot.data!;
+                      if (notifications.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Center(child: Text('Новых уведомлений нет')),
+                        );
+                      }
+                      return Column(
+                        children: [
+                          for (
+                            var index = 0;
+                            index < notifications.length;
+                            index++
+                          ) ...[
+                            if (index > 0)
+                              Divider(
+                                height: 18,
+                                color: palette.inkFaint.withValues(alpha: 0.16),
+                              ),
+                            _NotificationTile(
+                              item: _NotificationItem(
+                                icon: _notificationIcon(
+                                  notifications[index].type,
+                                ),
+                                title: notifications[index].title,
+                                message: notifications[index].message,
+                                time: _notificationTime(
+                                  notifications[index].createdAt,
+                                ),
+                                highlighted: !notifications[index].isRead,
+                              ),
+                            ),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -338,6 +352,22 @@ class _NotificationsSheet extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  IconData _notificationIcon(String type) => switch (type) {
+    'lesson' => Icons.school_rounded,
+    'homework' => Icons.assignment_rounded,
+    'video' => Icons.video_library_rounded,
+    _ => Icons.notifications_rounded,
+  };
+
+  String _notificationTime(DateTime? value) {
+    if (value == null) return 'сейчас';
+    final difference = DateTime.now().difference(value);
+    if (difference.inMinutes < 1) return 'сейчас';
+    if (difference.inHours < 1) return '${difference.inMinutes} мин';
+    if (difference.inDays < 1) return '${difference.inHours} ч';
+    return '${difference.inDays} дн';
   }
 }
 
@@ -824,7 +854,7 @@ class _TodayLessonsState extends State<_TodayLessons> {
             children: [
               Expanded(
                 child: Text(
-                  'Уроки на сегодня',
+                  'Ближайшие уроки',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
@@ -853,7 +883,7 @@ class _TodayLessonsState extends State<_TodayLessons> {
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'На сегодня уроков нет',
+                      'Назначенных уроков пока нет',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ),
@@ -940,31 +970,53 @@ class _LessonRow extends StatelessWidget {
 }
 
 class _RecommendedSection extends StatelessWidget {
-  const _RecommendedSection();
+  const _RecommendedSection({required this.uid});
+
+  final String uid;
 
   @override
   Widget build(BuildContext context) {
-    final videos = [
-      const _VideoLesson('Урок 10', 'Введение в таджвид', '12:30'),
-      const _VideoLesson('Урок 11', 'Правила Изхар', '15:45'),
-      const _VideoLesson('Урок 12', 'Правила Мадд', '18:24'),
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const ScreenTitle(title: 'Рекомендуется'),
         const SizedBox(height: 12),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              for (var index = 0; index < videos.length; index++) ...[
-                if (index > 0) const SizedBox(width: 12),
-                _VideoLessonCard(video: videos[index]),
-              ],
-            ],
-          ),
+        StreamBuilder<List<VideoLesson>>(
+          stream: FirestoreService(uid).getVideoLessons(),
+          builder: (context, snapshot) {
+            final videos = snapshot.data ?? const <VideoLesson>[];
+            if (snapshot.hasError) {
+              return const Text('Не удалось загрузить рекомендации');
+            }
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (videos.isEmpty) {
+              return const Text('Рекомендованных видео пока нет');
+            }
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (
+                    var index = 0;
+                    index < videos.length && index < 5;
+                    index++
+                  ) ...[
+                    if (index > 0) const SizedBox(width: 12),
+                    _VideoLessonCard(
+                      video: videos[index],
+                      onTap: () => showVideoPlayerModal(
+                        context: context,
+                        videos: videos,
+                        initialIndex: index,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
         ),
       ],
     );
@@ -972,9 +1024,10 @@ class _RecommendedSection extends StatelessWidget {
 }
 
 class _VideoLessonCard extends StatelessWidget {
-  const _VideoLessonCard({required this.video});
+  const _VideoLessonCard({required this.video, required this.onTap});
 
-  final _VideoLesson video;
+  final VideoLesson video;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -983,6 +1036,7 @@ class _VideoLessonCard extends StatelessWidget {
     return SizedBox(
       width: 190,
       child: AppCard(
+        onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -999,7 +1053,7 @@ class _VideoLessonCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-            TagWidget(label: video.number),
+            TagWidget(label: 'Урок ${video.number}'),
             const SizedBox(height: 10),
             Text(
               video.title,
@@ -1162,12 +1216,4 @@ class _QuickAccessItem {
   final String label;
   final IconData icon;
   final VoidCallback onTap;
-}
-
-class _VideoLesson {
-  const _VideoLesson(this.number, this.title, this.duration);
-
-  final String number;
-  final String title;
-  final String duration;
 }

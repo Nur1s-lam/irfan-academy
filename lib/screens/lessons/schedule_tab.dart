@@ -20,7 +20,7 @@ class _ScheduleTabState extends State<ScheduleTab> {
   @override
   void initState() {
     super.initState();
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     _firestoreService = FirestoreService(uid);
     _firestoreService.ensureDefaultLessons();
   }
@@ -28,6 +28,9 @@ class _ScheduleTabState extends State<ScheduleTab> {
   @override
   Widget build(BuildContext context) {
     final palette = AppTheme.palette(context);
+    if (FirebaseAuth.instance.currentUser == null) {
+      return const Center(child: Text('Войдите в аккаунт'));
+    }
 
     return StreamBuilder<List<Lesson>>(
       stream: _firestoreService.getLessons(),

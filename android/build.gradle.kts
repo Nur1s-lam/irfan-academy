@@ -1,14 +1,14 @@
-allprojects {
+import java.io.File
+
+// Use plain File paths to avoid potential compatibility issues with Gradle/Kotlin layout APIs
+val sharedBuildDir: File = rootProject.projectDir.resolve("../build")
+rootProject.buildDir = sharedBuildDir
+
+subprojects {
     repositories {
         google()
         mavenCentral()
     }
-}
 
-val newBuildDir = rootProject.layout.projectDirectory.dir("../build").asFile
-rootProject.layout.buildDirectory.set(newBuildDir)
-
-subprojects {
-    val newSubprojectBuildDir = newBuildDir.resolve(project.name)
-    project.layout.buildDirectory.set(newSubprojectBuildDir)
+    buildDir = File(rootProject.buildDir, project.name)
 }

@@ -13,7 +13,9 @@ class HomeworkTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppTheme.palette(context);
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const Center(child: Text('Войдите в аккаунт'));
+    final uid = user.uid;
     final firestoreService = FirestoreService(uid);
 
     return StreamBuilder<List<HomeworkItem>>(
@@ -158,11 +160,7 @@ class _HomeworkCheckbox extends StatelessWidget {
             color: done ? palette.primarySoft : palette.surface,
           ),
           child: done
-              ? Icon(
-                  Icons.check_rounded,
-                  color: palette.primaryDeep,
-                  size: 24,
-                )
+              ? Icon(Icons.check_rounded, color: palette.primaryDeep, size: 24)
               : const SizedBox.shrink(),
         ),
       ),

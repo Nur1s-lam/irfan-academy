@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/video_lesson.dart';
+import '../../services/admin_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/screen_title.dart';
 import 'homework_tab.dart';
@@ -16,6 +17,7 @@ class LessonsScreen extends StatefulWidget {
 
 class _LessonsScreenState extends State<LessonsScreen> {
   int _selectedTab = 0;
+  final AdminService _contentService = AdminService();
 
   final List<VideoLesson> _videos = const [
     VideoLesson(
@@ -72,7 +74,13 @@ class _LessonsScreenState extends State<LessonsScreen> {
             children: [
               const ScheduleTab(),
               const HomeworkTab(),
-              VideoTab(videos: _videos),
+              StreamBuilder<List<VideoLesson>>(
+                stream: _contentService.watchVideos(),
+                builder: (context, snapshot) {
+                  final videos = snapshot.data ?? _videos;
+                  return VideoTab(videos: videos);
+                },
+              ),
             ],
           ),
         ],

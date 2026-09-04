@@ -1,4 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -21,6 +22,11 @@ class NotificationService {
 
   Future<void> initialize() async {
     if (_initialized) {
+      return;
+    }
+
+    if (kIsWeb) {
+      _initialized = true;
       return;
     }
 
@@ -48,6 +54,9 @@ class NotificationService {
   }
 
   Future<void> schedulePrayerNotifications(List<PrayerTime> prayers) async {
+    if (kIsWeb) {
+      return;
+    }
     await initialize();
     await _notifications.cancelAll();
 

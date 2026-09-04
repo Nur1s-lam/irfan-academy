@@ -20,34 +20,19 @@ class AppCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppTheme.palette(context);
 
-    final card = AnimatedContainer(
-      duration: AppTheme.motion,
-      curve: AppTheme.motionCurve,
-      margin: margin,
-      decoration: BoxDecoration(
+    return Padding(
+      padding: margin ?? EdgeInsets.zero,
+      child: Material(
         color: palette.surface,
+        elevation: 2,
+        shadowColor: palette.ink.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: palette.ink.withValues(alpha: 0.06),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Padding(padding: padding, child: child),
-    );
-
-    if (onTap == null) {
-      return card;
-    }
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: card,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(padding: padding, child: child),
+        ),
       ),
     );
   }

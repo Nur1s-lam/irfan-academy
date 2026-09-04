@@ -10,21 +10,13 @@ import '../../theme/app_theme.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/gold_button.dart';
 import '../../widgets/ring_progress.dart';
+import '../admin/admin_screen.dart';
 import 'settings_sheet.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key, required this.onGoToQuran});
 
   final VoidCallback onGoToQuran;
-
-  static const List<Achievement> _achievements = [
-    Achievement(title: 'Хафиз Аль-Фатиха', progress: 1, isUnlocked: true),
-    Achievement(title: '7 дней подряд', progress: 1, isUnlocked: true),
-    Achievement(title: '30 уроков', progress: 1, isUnlocked: true),
-    Achievement(title: 'Мастер таджвида', progress: 0.6, isUnlocked: false),
-    Achievement(title: 'Первый джуз', progress: 0.4, isUnlocked: false),
-    Achievement(title: '100 аятов', progress: 0.25, isUnlocked: false),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -56,10 +48,37 @@ class ProfileScreen extends StatelessWidget {
         return _ProfileContent(
           profile: profile,
           onGoToQuran: onGoToQuran,
-          achievements: _achievements,
+          achievements: _achievementsFor(profile),
         );
       },
     );
+  }
+
+  List<Achievement> _achievementsFor(UserProfile profile) {
+    double ratio(num value, num target) =>
+        (value / target).clamp(0, 1).toDouble();
+    return [
+      Achievement(
+        title: 'Первый урок',
+        progress: ratio(profile.lessonsCount, 1),
+        isUnlocked: profile.lessonsCount >= 1,
+      ),
+      Achievement(
+        title: '7 дней подряд',
+        progress: ratio(profile.streakDays, 7),
+        isUnlocked: profile.streakDays >= 7,
+      ),
+      Achievement(
+        title: '30 уроков',
+        progress: ratio(profile.lessonsCount, 30),
+        isUnlocked: profile.lessonsCount >= 30,
+      ),
+      Achievement(
+        title: 'Прогресс Корана',
+        progress: profile.quranProgress.clamp(0, 1),
+        isUnlocked: profile.quranProgress >= 1,
+      ),
+    ];
   }
 }
 
@@ -82,6 +101,20 @@ class _ProfileContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _ProfileBanner(profile: profile),
+          if (profile.isAdmin) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => AdminScreen()),
+                ),
+                icon: const Icon(Icons.admin_panel_settings_rounded),
+                label: const Text('Открыть админ-панель'),
+              ),
+            ),
+          ],
           const SizedBox(height: 20),
           _StatsRow(profile: profile),
           const SizedBox(height: 20),
@@ -143,10 +176,7 @@ class _ProfileBanner extends StatelessWidget {
                   backgroundColor: Colors.transparent,
                   builder: (_) => const SettingsSheet(),
                 ),
-                icon: Icon(
-                  Icons.settings_rounded,
-                  color: onPrimary,
-                ),
+                icon: Icon(Icons.settings_rounded, color: onPrimary),
               ),
             ),
             Padding(
@@ -198,9 +228,7 @@ class _ProfileBanner extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
-                                  color: onPrimary.withValues(
-                                    alpha: 0.8,
-                                  ),
+                                  color: onPrimary.withValues(alpha: 0.8),
                                   fontSize: 13,
                                 ),
                           ),
@@ -250,7 +278,10 @@ class _StatsRow extends StatelessWidget {
           runSpacing: gap,
           children: [
             for (final stat in stats)
-              SizedBox(width: width, child: _StatCard(stat: stat)),
+              SizedBox(
+                width: width,
+                child: _StatCard(stat: stat),
+              ),
           ],
         );
       },
@@ -340,11 +371,7 @@ class _MemorizationCard extends StatelessWidget {
           if (isCompact) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                progress,
-                const SizedBox(height: 16),
-                content,
-              ],
+              children: [progress, const SizedBox(height: 16), content],
             );
           }
 

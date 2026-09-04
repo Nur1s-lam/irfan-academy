@@ -55,9 +55,26 @@ class PrayerService {
     );
   }
 
+  PrayerTime getNextPrayerForSchedule(PrayerSchedule schedule) {
+    final now = DateTime.now();
+    for (final prayer in schedule.prayers) {
+      if (!prayer.isFaint && prayer.dateTime.isAfter(now)) return prayer;
+    }
+
+    final tomorrow = now.add(const Duration(days: 1));
+    final params = CalculationMethod.muslim_world_league.getParameters()
+      ..madhab = Madhab.hanafi;
+    final times = PrayerTimes(
+      Coordinates(schedule.latitude, schedule.longitude),
+      DateComponents.from(tomorrow),
+      params,
+    );
+    return _prayer('Фаджр', 'الفجر', times.fajr);
+  }
+
   Duration getTimeUntilNextPrayer(PrayerTime nextPrayer) {
     final now = DateTime.now();
-    var prayerDateTime = _parseTimeToday(nextPrayer.time);
+    var prayerDateTime = nextPrayer.dateTime;
     if (!prayerDateTime.isAfter(now)) {
       prayerDateTime = prayerDateTime.add(const Duration(days: 1));
     }

@@ -34,8 +34,6 @@ class AuthService {
       if (uid != null) {
         final firestoreService = FirestoreService(uid);
         await firestoreService.createUserProfile(name: name, email: email);
-        await firestoreService.initDefaultHomework();
-        await firestoreService.initDefaultLessons();
       }
       return cred;
     } on FirebaseAuthException catch (e) {

@@ -2,15 +2,43 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/lesson.dart';
 import '../models/user_profile.dart';
+import '../models/video_lesson.dart';
 
 class QuranBookmark {
-  const QuranBookmark({
-    required this.ayahNumber,
-    required this.surahName,
-  });
+  const QuranBookmark({required this.ayahNumber, required this.surahName});
 
   final int ayahNumber;
   final String surahName;
+}
+
+class AcademyNotification {
+  const AcademyNotification({
+    required this.id,
+    required this.title,
+    required this.message,
+    required this.type,
+    required this.createdAt,
+    required this.isRead,
+  });
+
+  final String id;
+  final String title;
+  final String message;
+  final String type;
+  final DateTime? createdAt;
+  final bool isRead;
+
+  factory AcademyNotification.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+    return AcademyNotification(
+      id: doc.id,
+      title: data['title']?.toString() ?? 'Уведомление',
+      message: data['message']?.toString() ?? '',
+      type: data['type']?.toString() ?? 'info',
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+      isRead: data['isRead'] == true,
+    );
+  }
 }
 
 class FirestoreService {
@@ -50,6 +78,37 @@ class FirestoreService {
     });
   }
 
+  Stream<List<AcademyNotification>> getNotifications() {
+    return _userDoc
+        .collection('notifications')
+        .orderBy('createdAt', descending: true)
+        .limit(30)
+        .snapshots()
+        .map(
+          (snapshot) =>
+              snapshot.docs.map(AcademyNotification.fromFirestore).toList(),
+        );
+  }
+
+  Stream<List<VideoLesson>> getVideoLessons() => _db
+      .collection('videoLessons')
+      .orderBy('number')
+      .snapshots()
+      .map((snapshot) => snapshot.docs.map(VideoLesson.fromFirestore).toList());
+
+  Future<void> markNotificationsRead() async {
+    final unread = await _userDoc
+        .collection('notifications')
+        .where('isRead', isEqualTo: false)
+        .limit(100)
+        .get();
+    final batch = _db.batch();
+    for (final doc in unread.docs) {
+      batch.update(doc.reference, {'isRead': true});
+    }
+    await batch.commit();
+  }
+
   Future<void> updateQuranProgress(double progress, String sura, int ayah) {
     return _userDoc.update({
       'quranProgress': progress,
@@ -62,10 +121,20 @@ class FirestoreService {
       _userDoc.collection('homework');
 
   Stream<List<HomeworkItem>> getHomework() {
+    const legacyDemoTasks = {
+      'Повторить Суру Аль-Фатиха наизусть',
+      'Прописать буквы с харакятами (с. 12–14)',
+      'Прослушать урок №12 «Правила Мадд»',
+    };
     return _homeworkCol
         .orderBy('createdAt')
         .snapshots()
-        .map((snap) => snap.docs.map(HomeworkItem.fromFirestore).toList());
+        .map(
+          (snap) => snap.docs
+              .map(HomeworkItem.fromFirestore)
+              .where((item) => !legacyDemoTasks.contains(item.task))
+              .toList(),
+        );
   }
 
   Future<void> updateHomeworkStatus(String docId, bool isDone) {
@@ -117,34 +186,32 @@ class FirestoreService {
       _userDoc.collection('lessons');
 
   Stream<List<Lesson>> getLessons() {
-    return _lessonsCol
-        .orderBy('sortOrder')
-        .snapshots()
-        .map((snap) {
-          final seen = <String>{};
-          final lessons = <Lesson>[];
+    return _lessonsCol.orderBy('sortOrder').snapshots().map((snap) {
+      final seen = <String>{};
+      final lessons = <Lesson>[];
 
-          for (final doc in snap.docs) {
-            final lesson = Lesson.fromFirestore(doc);
-            final key = [
-              lesson.day,
-              lesson.time,
-              lesson.durationMin,
-              lesson.type,
-              lesson.topic,
-              lesson.teacher,
-            ].join('|');
+      for (final doc in snap.docs) {
+        if (doc.id.startsWith('default-')) continue;
+        final lesson = Lesson.fromFirestore(doc);
+        final key = [
+          lesson.day,
+          lesson.time,
+          lesson.durationMin,
+          lesson.type,
+          lesson.topic,
+          lesson.teacher,
+        ].join('|');
 
-            if (seen.add(key)) {
-              lessons.add(lesson);
-            }
-          }
+        if (seen.add(key)) {
+          lessons.add(lesson);
+        }
+      }
 
-          return lessons;
-        });
+      return lessons;
+    });
   }
 
-  Future<void> ensureDefaultLessons() => initDefaultLessons();
+  Future<void> ensureDefaultLessons() async {}
 
   Future<void> initDefaultLessons() async {
     final snap = await _lessonsCol.limit(1).get();

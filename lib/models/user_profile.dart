@@ -27,6 +27,11 @@ class UserProfile {
   final String currentSura;
   final int currentAyah;
 
+  bool get isAdmin {
+    final normalized = role.trim().toLowerCase();
+    return normalized == 'admin' || normalized == 'администратор';
+  }
+
   factory UserProfile.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
     return UserProfile(
