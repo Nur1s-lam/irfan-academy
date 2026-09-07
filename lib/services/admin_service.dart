@@ -130,12 +130,19 @@ class AdminService {
   Future<void> publishAnnouncement({
     required String title,
     required String body,
-  }) => _db.collection('announcements').add({
-    'title': title.trim(),
-    'body': body.trim(),
-    'isPublished': true,
-    'createdAt': FieldValue.serverTimestamp(),
-  });
+  }) async {
+    await _db.collection('announcements').add({
+      'title': title.trim(),
+      'body': body.trim(),
+      'isPublished': true,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    await _notifyAllUsers(
+      title: title.trim(),
+      message: body.trim(),
+      type: 'announcement',
+    );
+  }
 
   Future<List<DocumentReference<Map<String, dynamic>>>> _targetStudents(
     String uid,
@@ -156,6 +163,24 @@ class AdminService {
     final targets = await _targetStudents(allStudents);
     await _writeForTargets(
       targets,
+      (batch, user) => _addNotification(
+        batch,
+        user,
+        title: title,
+        message: message,
+        type: type,
+      ),
+    );
+  }
+
+  Future<void> _notifyAllUsers({
+    required String title,
+    required String message,
+    required String type,
+  }) async {
+    final snapshot = await _db.collection('users').get();
+    await _writeForTargets(
+      snapshot.docs.map((doc) => doc.reference).toList(),
       (batch, user) => _addNotification(
         batch,
         user,

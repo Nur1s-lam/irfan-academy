@@ -358,6 +358,7 @@ class _NotificationsSheet extends StatelessWidget {
     'lesson' => Icons.school_rounded,
     'homework' => Icons.assignment_rounded,
     'video' => Icons.video_library_rounded,
+    'announcement' => Icons.campaign_rounded,
     _ => Icons.notifications_rounded,
   };
 

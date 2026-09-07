@@ -1,11 +1,11 @@
 {
-    "name": "irfan_academy",
-    "short_name": "irfan_academy",
+    "name": "Irfan Academy",
+    "short_name": "Irfan",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFBF2",
+    "theme_color": "#D6A72D",
+    "description": "Уроки, задания, расписание и полезные религиозные функции.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

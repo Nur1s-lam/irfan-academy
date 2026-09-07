@@ -6,6 +6,7 @@ import '../auth/login_screen.dart';
 import '../auth/register_screen.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/gold_button.dart';
+import '../../widgets/brand_logo.dart';
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
@@ -98,46 +99,7 @@ class _LogoMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final palette = AppTheme.palette(context);
-
-    return Container(
-      width: 104,
-      height: 104,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [palette.primary, palette.primaryDeep],
-        ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: palette.primaryDeep.withValues(alpha: 0.24),
-            blurRadius: 26,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: colorScheme.onPrimary.withValues(alpha: 0.78),
-              width: 2,
-            ),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Icon(
-            Icons.auto_stories_rounded,
-            color: colorScheme.onPrimary,
-            size: 34,
-          ),
-        ),
-      ),
-    );
+    return const BrandLogo(width: 150, height: 150);
   }
 }
 

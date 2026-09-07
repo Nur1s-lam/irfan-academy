@@ -34,3 +34,13 @@ node_modules/
 
 # Logs
 *.log
+
+# Python service files
+__pycache__/
+*.py[cod]
+
+# Generated test coverage
+coverage/
+
+# Firebase CLI local cache
+.firebase/

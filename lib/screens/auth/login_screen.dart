@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/gold_button.dart';
+import '../../widgets/brand_logo.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -187,30 +188,7 @@ class _AuthHeader extends StatelessWidget {
 
     return Column(
       children: [
-        Container(
-          width: 82,
-          height: 82,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [palette.primary, palette.primaryDeep],
-            ),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: palette.primaryDeep.withValues(alpha: 0.22),
-                blurRadius: 22,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Icon(
-            Icons.auto_stories_rounded,
-            color: Theme.of(context).colorScheme.onPrimary,
-            size: 38,
-          ),
-        ),
+        const BrandLogo(width: 118, height: 118),
         const SizedBox(height: 16),
         Text(
           'Irfan Academy',

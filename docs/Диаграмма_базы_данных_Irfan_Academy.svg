@@ -1,0 +1,230 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3400" height="2300" viewBox="0 0 3400 2300">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs>
+<rect width="3400" height="2300" fill="#EEF3F7"/>
+<text x="70" y="78" font-family="Arial" font-size="54" font-weight="700" fill="#17324D">ЛОГИЧЕСКАЯ СХЕМА FIRESTORE — IRFAN ACADEMY</text>
+<text x="72" y="126" font-family="Arial" font-size="28" font-weight="400" fill="#526D82">Коллекции, подколлекции, внешнее хранилище и фактические связи по коду проекта</text>
+<polyline points="720,315 1040,315" fill="none" stroke="#526D82" stroke-width="7" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="780" y="300" font-family="Arial" font-size="23" font-weight="700" fill="#263238">uid  1 : 1</text>
+<polyline points="1500,736 1500,1320" fill="none" stroke="#2F75B5" stroke-width="7" stroke-linejoin="round"/>
+<polyline points="395,1320 2680,1320" fill="none" stroke="#2F75B5" stroke-width="7" stroke-linejoin="round"/>
+<polyline points="395,1320 395,1430" fill="none" stroke="#2F75B5" stroke-width="7" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="365" y="1375" font-family="Arial" font-size="23" font-weight="700" fill="#263238">0..*</text>
+<polyline points="1115,1320 1115,1430" fill="none" stroke="#2F75B5" stroke-width="7" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="1085" y="1375" font-family="Arial" font-size="23" font-weight="700" fill="#263238">0..*</text>
+<polyline points="1855,1320 1855,1430" fill="none" stroke="#2F75B5" stroke-width="7" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="1825" y="1375" font-family="Arial" font-size="23" font-weight="700" fill="#263238">0..*</text>
+<polyline points="2680,1320 2680,1510" fill="none" stroke="#2F75B5" stroke-width="7" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="2650" y="1375" font-family="Arial" font-size="23" font-weight="700" fill="#263238">0..*</text>
+<text x="1518" y="811" font-family="Arial" font-size="23" font-weight="700" fill="#263238">1 — владелец</text>
+<polyline points="2980,485 2980,540 2900,540 2900,600" fill="none" stroke="#2E6E5B" stroke-width="7" stroke-linejoin="round" stroke-dasharray="16 13" marker-end="url(#arrow)"/>
+<text x="2715" y="530" font-family="Arial" font-size="23" font-weight="700" fill="#263238">public_id / secure_url</text>
+<polyline points="760,807 850,807 850,1240 1775,1240 1775,1430" fill="none" stroke="#D17A22" stroke-width="7" stroke-linejoin="round" stroke-dasharray="16 13" marker-end="url(#arrow)"/>
+<text x="920" y="1225" font-family="Arial" font-size="23" font-weight="700" fill="#263238">публикация → уведомления всем</text>
+<polyline points="2470,929 2320,929 2320,1265 1935,1265 1935,1430" fill="none" stroke="#D17A22" stroke-width="7" stroke-linejoin="round" stroke-dasharray="16 13" marker-end="url(#arrow)"/>
+<text x="2050" y="1245" font-family="Arial" font-size="23" font-weight="700" fill="#263238">новое видео → уведомления</text>
+<polyline points="1115,1831 1115,1930 1855,1930 1855,1788" fill="none" stroke="#D17A22" stroke-width="7" stroke-linejoin="round" stroke-dasharray="16 13" marker-end="url(#arrow)"/>
+<text x="1110" y="1915" font-family="Arial" font-size="23" font-weight="700" fill="#263238">задание → notification(type=&#x27;homework&#x27;)</text>
+<polyline points="395,1960 395,2070 1855,2070 1855,1788" fill="none" stroke="#D17A22" stroke-width="7" stroke-linejoin="round" stroke-dasharray="16 13" marker-end="url(#arrow)"/>
+<text x="850" y="2055" font-family="Arial" font-size="23" font-weight="700" fill="#263238">назначение урока → notification(type=&#x27;lesson&#x27;)</text>
+<rect x="80" y="202" width="650" height="272" rx="20" fill="#000" opacity="0.12"/>
+<rect x="70" y="190" width="650" height="272" rx="20" fill="#fff" stroke="#455A64" stroke-width="4"/>
+<path d="M 90 190 H 700 Q 720 190 720 210 V 272 H 70 V 210 Q 70 190 90 190 Z" fill="#455A64"/>
+<text x="92" y="242" font-family="Arial" font-size="30" font-weight="700" fill="#fff">Firebase Authentication</text>
+<rect x="73" y="272" width="644" height="43" fill="#F5F8FB"/>
+<text x="92" y="301" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#9C2F2F">uid : string [PK]</text>
+<line x1="73" y1="315" x2="717" y2="315" stroke="#D9E1E8"/>
+<text x="92" y="344" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">email : string</text>
+<rect x="73" y="358" width="644" height="43" fill="#F5F8FB"/>
+<line x1="73" y1="358" x2="717" y2="358" stroke="#D9E1E8"/>
+<text x="92" y="387" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">displayName : string?</text>
+<line x1="73" y1="401" x2="717" y2="401" stroke="#D9E1E8"/>
+<text x="92" y="430" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">credentials : managed by Firebase</text>
+<rect x="1050" y="132" width="920" height="616" rx="20" fill="#000" opacity="0.12"/>
+<rect x="1040" y="120" width="920" height="616" rx="20" fill="#fff" stroke="#1F4E78" stroke-width="4"/>
+<path d="M 1060 120 H 1940 Q 1960 120 1960 140 V 202 H 1040 V 140 Q 1040 120 1060 120 Z" fill="#1F4E78"/>
+<text x="1062" y="172" font-family="Arial" font-size="30" font-weight="700" fill="#fff">users/{uid}</text>
+<rect x="1043" y="202" width="914" height="43" fill="#F5F8FB"/>
+<text x="1062" y="231" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#9C2F2F">uid : document ID [PK]</text>
+<line x1="1043" y1="245" x2="1957" y2="245" stroke="#D9E1E8"/>
+<text x="1062" y="274" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">name : string</text>
+<rect x="1043" y="288" width="914" height="43" fill="#F5F8FB"/>
+<line x1="1043" y1="288" x2="1957" y2="288" stroke="#D9E1E8"/>
+<text x="1062" y="317" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">email : string</text>
+<line x1="1043" y1="331" x2="1957" y2="331" stroke="#D9E1E8"/>
+<text x="1062" y="360" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">group : string</text>
+<rect x="1043" y="374" width="914" height="43" fill="#F5F8FB"/>
+<line x1="1043" y1="374" x2="1957" y2="374" stroke="#D9E1E8"/>
+<text x="1062" y="403" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">role : string</text>
+<line x1="1043" y1="417" x2="1957" y2="417" stroke="#D9E1E8"/>
+<text x="1062" y="446" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">attendance : int</text>
+<rect x="1043" y="460" width="914" height="43" fill="#F5F8FB"/>
+<line x1="1043" y1="460" x2="1957" y2="460" stroke="#D9E1E8"/>
+<text x="1062" y="489" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">lessonsCount : int</text>
+<line x1="1043" y1="503" x2="1957" y2="503" stroke="#D9E1E8"/>
+<text x="1062" y="532" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">streakDays : int</text>
+<rect x="1043" y="546" width="914" height="43" fill="#F5F8FB"/>
+<line x1="1043" y1="546" x2="1957" y2="546" stroke="#D9E1E8"/>
+<text x="1062" y="575" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">quranProgress : double</text>
+<line x1="1043" y1="589" x2="1957" y2="589" stroke="#D9E1E8"/>
+<text x="1062" y="618" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">currentSura : string</text>
+<rect x="1043" y="632" width="914" height="43" fill="#F5F8FB"/>
+<line x1="1043" y1="632" x2="1957" y2="632" stroke="#D9E1E8"/>
+<text x="1062" y="661" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">currentAyah : int</text>
+<line x1="1043" y1="675" x2="1957" y2="675" stroke="#D9E1E8"/>
+<text x="1062" y="704" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">createdAt : timestamp</text>
+<rect x="2640" y="182" width="700" height="315" rx="20" fill="#000" opacity="0.12"/>
+<rect x="2630" y="170" width="700" height="315" rx="20" fill="#fff" stroke="#2E6E5B" stroke-width="4"/>
+<path d="M 2650 170 H 3310 Q 3330 170 3330 190 V 252 H 2630 V 190 Q 2630 170 2650 170 Z" fill="#2E6E5B"/>
+<text x="2652" y="222" font-family="Arial" font-size="30" font-weight="700" fill="#fff">Cloudinary Video Asset</text>
+<rect x="2633" y="252" width="694" height="43" fill="#F5F8FB"/>
+<text x="2652" y="281" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#9C2F2F">public_id : string [PK]</text>
+<line x1="2633" y1="295" x2="3327" y2="295" stroke="#D9E1E8"/>
+<text x="2652" y="324" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">secure_url : URL</text>
+<rect x="2633" y="338" width="694" height="43" fill="#F5F8FB"/>
+<line x1="2633" y1="338" x2="3327" y2="338" stroke="#D9E1E8"/>
+<text x="2652" y="367" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">bytes : int</text>
+<line x1="2633" y1="381" x2="3327" y2="381" stroke="#D9E1E8"/>
+<text x="2652" y="410" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">format : string</text>
+<rect x="2633" y="424" width="694" height="43" fill="#F5F8FB"/>
+<line x1="2633" y1="424" x2="3327" y2="424" stroke="#D9E1E8"/>
+<text x="2652" y="453" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">duration : number</text>
+<rect x="80" y="662" width="690" height="315" rx="20" fill="#000" opacity="0.12"/>
+<rect x="70" y="650" width="690" height="315" rx="20" fill="#fff" stroke="#C56A16" stroke-width="4"/>
+<path d="M 90 650 H 740 Q 760 650 760 670 V 732 H 70 V 670 Q 70 650 90 650 Z" fill="#C56A16"/>
+<text x="92" y="702" font-family="Arial" font-size="30" font-weight="700" fill="#fff">announcements/{announcementId}</text>
+<rect x="73" y="732" width="684" height="43" fill="#F5F8FB"/>
+<text x="92" y="761" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#9C2F2F">announcementId : document ID [PK]</text>
+<line x1="73" y1="775" x2="757" y2="775" stroke="#D9E1E8"/>
+<text x="92" y="804" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">title : string</text>
+<rect x="73" y="818" width="684" height="43" fill="#F5F8FB"/>
+<line x1="73" y1="818" x2="757" y2="818" stroke="#D9E1E8"/>
+<text x="92" y="847" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">body : string</text>
+<line x1="73" y1="861" x2="757" y2="861" stroke="#D9E1E8"/>
+<text x="92" y="890" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">isPublished : bool</text>
+<rect x="73" y="904" width="684" height="43" fill="#F5F8FB"/>
+<line x1="73" y1="904" x2="757" y2="904" stroke="#D9E1E8"/>
+<text x="92" y="933" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">createdAt : timestamp</text>
+<rect x="2480" y="612" width="860" height="659" rx="20" fill="#000" opacity="0.12"/>
+<rect x="2470" y="600" width="860" height="659" rx="20" fill="#fff" stroke="#6A4C93" stroke-width="4"/>
+<path d="M 2490 600 H 3310 Q 3330 600 3330 620 V 682 H 2470 V 620 Q 2470 600 2490 600 Z" fill="#6A4C93"/>
+<text x="2492" y="652" font-family="Arial" font-size="30" font-weight="700" fill="#fff">videoLessons/{videoId}</text>
+<rect x="2473" y="682" width="854" height="43" fill="#F5F8FB"/>
+<text x="2492" y="711" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#9C2F2F">videoId : document ID [PK]</text>
+<line x1="2473" y1="725" x2="3327" y2="725" stroke="#D9E1E8"/>
+<text x="2492" y="754" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">title : string</text>
+<rect x="2473" y="768" width="854" height="43" fill="#F5F8FB"/>
+<line x1="2473" y1="768" x2="3327" y2="768" stroke="#D9E1E8"/>
+<text x="2492" y="797" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">number : int</text>
+<line x1="2473" y1="811" x2="3327" y2="811" stroke="#D9E1E8"/>
+<text x="2492" y="840" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">totalSeconds : int</text>
+<rect x="2473" y="854" width="854" height="43" fill="#F5F8FB"/>
+<line x1="2473" y1="854" x2="3327" y2="854" stroke="#D9E1E8"/>
+<text x="2492" y="883" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">duration : string (MM:SS)</text>
+<line x1="2473" y1="897" x2="3327" y2="897" stroke="#D9E1E8"/>
+<text x="2492" y="926" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">videoUrl : URL [REF → secure_url]</text>
+<rect x="2473" y="940" width="854" height="43" fill="#F5F8FB"/>
+<line x1="2473" y1="940" x2="3327" y2="940" stroke="#D9E1E8"/>
+<text x="2492" y="969" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">videoPath : string [REF → public_id]</text>
+<line x1="2473" y1="983" x2="3327" y2="983" stroke="#D9E1E8"/>
+<text x="2492" y="1012" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">fileName : string</text>
+<rect x="2473" y="1026" width="854" height="43" fill="#F5F8FB"/>
+<line x1="2473" y1="1026" x2="3327" y2="1026" stroke="#D9E1E8"/>
+<text x="2492" y="1055" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">fileSize : int</text>
+<line x1="2473" y1="1069" x2="3327" y2="1069" stroke="#D9E1E8"/>
+<text x="2492" y="1098" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">contentType : string</text>
+<rect x="2473" y="1112" width="854" height="43" fill="#F5F8FB"/>
+<line x1="2473" y1="1112" x2="3327" y2="1112" stroke="#D9E1E8"/>
+<text x="2492" y="1141" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">storageProvider : &#x27;cloudinary&#x27;</text>
+<line x1="2473" y1="1155" x2="3327" y2="1155" stroke="#D9E1E8"/>
+<text x="2492" y="1184" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">description : string</text>
+<rect x="2473" y="1198" width="854" height="43" fill="#F5F8FB"/>
+<line x1="2473" y1="1198" x2="3327" y2="1198" stroke="#D9E1E8"/>
+<text x="2492" y="1227" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">createdAt : timestamp</text>
+<rect x="80" y="1442" width="650" height="530" rx="20" fill="#000" opacity="0.12"/>
+<rect x="70" y="1430" width="650" height="530" rx="20" fill="#fff" stroke="#2F75B5" stroke-width="4"/>
+<path d="M 90 1430 H 700 Q 720 1430 720 1450 V 1512 H 70 V 1450 Q 70 1430 90 1430 Z" fill="#2F75B5"/>
+<text x="92" y="1482" font-family="Arial" font-size="30" font-weight="700" fill="#fff">users/{uid}/lessons/{lessonId}</text>
+<rect x="73" y="1512" width="644" height="43" fill="#F5F8FB"/>
+<text x="92" y="1541" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#9C2F2F">lessonId : document ID [PK]</text>
+<line x1="73" y1="1555" x2="717" y2="1555" stroke="#D9E1E8"/>
+<text x="92" y="1584" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">day : string</text>
+<rect x="73" y="1598" width="644" height="43" fill="#F5F8FB"/>
+<line x1="73" y1="1598" x2="717" y2="1598" stroke="#D9E1E8"/>
+<text x="92" y="1627" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">time : string</text>
+<line x1="73" y1="1641" x2="717" y2="1641" stroke="#D9E1E8"/>
+<text x="92" y="1670" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">durationMin : int</text>
+<rect x="73" y="1684" width="644" height="43" fill="#F5F8FB"/>
+<line x1="73" y1="1684" x2="717" y2="1684" stroke="#D9E1E8"/>
+<text x="92" y="1713" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">type : string</text>
+<line x1="73" y1="1727" x2="717" y2="1727" stroke="#D9E1E8"/>
+<text x="92" y="1756" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">topic : string</text>
+<rect x="73" y="1770" width="644" height="43" fill="#F5F8FB"/>
+<line x1="73" y1="1770" x2="717" y2="1770" stroke="#D9E1E8"/>
+<text x="92" y="1799" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">teacher : string</text>
+<line x1="73" y1="1813" x2="717" y2="1813" stroke="#D9E1E8"/>
+<text x="92" y="1842" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">isSoon : bool</text>
+<rect x="73" y="1856" width="644" height="43" fill="#F5F8FB"/>
+<line x1="73" y1="1856" x2="717" y2="1856" stroke="#D9E1E8"/>
+<text x="92" y="1885" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">sortOrder : int</text>
+<line x1="73" y1="1899" x2="717" y2="1899" stroke="#D9E1E8"/>
+<text x="92" y="1928" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">createdAt : timestamp</text>
+<rect x="800" y="1442" width="650" height="401" rx="20" fill="#000" opacity="0.12"/>
+<rect x="790" y="1430" width="650" height="401" rx="20" fill="#fff" stroke="#2F75B5" stroke-width="4"/>
+<path d="M 810 1430 H 1420 Q 1440 1430 1440 1450 V 1512 H 790 V 1450 Q 790 1430 810 1430 Z" fill="#2F75B5"/>
+<text x="812" y="1482" font-family="Arial" font-size="24" font-weight="700" fill="#fff">users/{uid}/homework/{homeworkId}</text>
+<rect x="793" y="1512" width="644" height="43" fill="#F5F8FB"/>
+<text x="812" y="1541" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#9C2F2F">homeworkId : document ID [PK]</text>
+<line x1="793" y1="1555" x2="1437" y2="1555" stroke="#D9E1E8"/>
+<text x="812" y="1584" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">task : string</text>
+<rect x="793" y="1598" width="644" height="43" fill="#F5F8FB"/>
+<line x1="793" y1="1598" x2="1437" y2="1598" stroke="#D9E1E8"/>
+<text x="812" y="1627" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">subject : string</text>
+<line x1="793" y1="1641" x2="1437" y2="1641" stroke="#D9E1E8"/>
+<text x="812" y="1670" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">deadline : string</text>
+<rect x="793" y="1684" width="644" height="43" fill="#F5F8FB"/>
+<line x1="793" y1="1684" x2="1437" y2="1684" stroke="#D9E1E8"/>
+<text x="812" y="1713" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">status : string</text>
+<line x1="793" y1="1727" x2="1437" y2="1727" stroke="#D9E1E8"/>
+<text x="812" y="1756" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">isDone : bool</text>
+<rect x="793" y="1770" width="644" height="43" fill="#F5F8FB"/>
+<line x1="793" y1="1770" x2="1437" y2="1770" stroke="#D9E1E8"/>
+<text x="812" y="1799" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">createdAt : timestamp</text>
+<rect x="1520" y="1442" width="690" height="358" rx="20" fill="#000" opacity="0.12"/>
+<rect x="1510" y="1430" width="690" height="358" rx="20" fill="#fff" stroke="#2F75B5" stroke-width="4"/>
+<path d="M 1530 1430 H 2180 Q 2200 1430 2200 1450 V 1512 H 1510 V 1450 Q 1510 1430 1530 1430 Z" fill="#2F75B5"/>
+<text x="1532" y="1482" font-family="Arial" font-size="24" font-weight="700" fill="#fff">users/{uid}/notifications/{notificationId}</text>
+<rect x="1513" y="1512" width="684" height="43" fill="#F5F8FB"/>
+<text x="1532" y="1541" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#9C2F2F">notificationId : document ID [PK]</text>
+<line x1="1513" y1="1555" x2="2197" y2="1555" stroke="#D9E1E8"/>
+<text x="1532" y="1584" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">title : string</text>
+<rect x="1513" y="1598" width="684" height="43" fill="#F5F8FB"/>
+<line x1="1513" y1="1598" x2="2197" y2="1598" stroke="#D9E1E8"/>
+<text x="1532" y="1627" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">message : string</text>
+<line x1="1513" y1="1641" x2="2197" y2="1641" stroke="#D9E1E8"/>
+<text x="1532" y="1670" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">type : string</text>
+<rect x="1513" y="1684" width="684" height="43" fill="#F5F8FB"/>
+<line x1="1513" y1="1684" x2="2197" y2="1684" stroke="#D9E1E8"/>
+<text x="1532" y="1713" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">isRead : bool</text>
+<line x1="1513" y1="1727" x2="2197" y2="1727" stroke="#D9E1E8"/>
+<text x="1532" y="1756" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">createdAt : timestamp</text>
+<rect x="2280" y="1522" width="820" height="272" rx="20" fill="#000" opacity="0.12"/>
+<rect x="2270" y="1510" width="820" height="272" rx="20" fill="#fff" stroke="#2F75B5" stroke-width="4"/>
+<path d="M 2290 1510 H 3070 Q 3090 1510 3090 1530 V 1592 H 2270 V 1530 Q 2270 1510 2290 1510 Z" fill="#2F75B5"/>
+<text x="2292" y="1562" font-family="Arial" font-size="24" font-weight="700" fill="#fff">users/{uid}/quranBookmarks/{bookmarkId}</text>
+<rect x="2273" y="1592" width="814" height="43" fill="#F5F8FB"/>
+<text x="2292" y="1621" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#9C2F2F">bookmarkId : document ID [PK]</text>
+<line x1="2273" y1="1635" x2="3087" y2="1635" stroke="#D9E1E8"/>
+<text x="2292" y="1664" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">ayahNumber : int</text>
+<rect x="2273" y="1678" width="814" height="43" fill="#F5F8FB"/>
+<line x1="2273" y1="1678" x2="3087" y2="1678" stroke="#D9E1E8"/>
+<text x="2292" y="1707" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">surahName : string</text>
+<line x1="2273" y1="1721" x2="3087" y2="1721" stroke="#D9E1E8"/>
+<text x="2292" y="1750" font-family="Consolas, monospace" font-size="24" font-weight="400" fill="#263238">createdAt : timestamp</text>
+<rect x="70" y="2140" width="3260" height="120" rx="18" fill="#fff" stroke="#B6C5D1" stroke-width="3"/>
+<line x1="100" y1="2178" x2="210" y2="2178" stroke="#2F75B5" stroke-width="8"/>
+<text x="230" y="2187" font-family="Arial" font-size="24" font-weight="400" fill="#263238">владение / вложенная подколлекция</text>
+<polyline points="800,2178 910,2178" fill="none" stroke="#D17A22" stroke-width="7" stroke-linejoin="round" stroke-dasharray="16 13" marker-end="url(#arrow)"/>
+<text x="930" y="2187" font-family="Arial" font-size="24" font-weight="400" fill="#263238">логическая связь / создаваемое уведомление</text>
+<text x="1780" y="2187" font-family="Arial" font-size="24" font-weight="400" fill="#263238">[PK] — идентификатор документа; [REF] — логическая ссылка</text>
+<text x="100" y="2233" font-family="Arial" font-size="23" font-weight="400" fill="#455A64">Не хранятся в Firestore: видеофайл — Cloudinary; время намаза и Кыбла — вычисляются; Коран — пакет quran; настройки уведомлений — SharedPreferences.</text>
+</svg>
